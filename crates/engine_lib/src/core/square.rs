@@ -1,14 +1,28 @@
+use std::fmt;
+
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Square(u8);
 
 impl Square {
     pub fn new(file: u8, rank: u8) -> Self {
         Square(rank * 8 + file)
     }
+    pub fn index(self) -> u8 {
+        self.0
+    }
     pub fn file(self) -> u8 {
         self.0 % 8
     }
     pub fn rank(self) -> u8 {
         self.0 / 8
+    }
+}
+
+impl fmt::Display for Square {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let file = (b'a' + self.file()) as char;
+        let rank = self.rank() + 1;
+        write!(f, "{}{}", file, rank)
     }
 }
 
@@ -19,8 +33,22 @@ mod tests {
     #[test]
     fn test_new() {
         let square = Square::new(4, 2);
-        assert_eq!(square.0, 12);
         assert_eq!(square.file(), 4);
         assert_eq!(square.rank(), 2);
+        assert_eq!(square.index(), 20);
+    }
+
+    #[test]
+    fn test_display() {
+        let a1 = Square::new(0, 0);
+        let h8 = Square::new(7, 7);
+        assert_eq!(a1.to_string(), "a1");
+        assert_eq!(h8.to_string(), "h8");
+    }
+    #[test]
+    fn test_recycled() {
+        let old = Square::new(4, 7);
+        let new = Square::new(old.file(), old.rank());
+        assert_eq!(old, new);
     }
 }
