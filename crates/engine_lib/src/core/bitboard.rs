@@ -1,10 +1,31 @@
 use crate::core::square::Square;
+use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Bitboard(u64);
 
 pub struct BitboardIter(Bitboard);
+
+impl fmt::Display for Bitboard {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // In reverse, so top to bottom
+        for rank in (0..8).rev() {
+            write!(f, "{} |", rank + 1)?;
+            for file in 0..8 {
+                if self.has_square(Square::new(file, rank)) {
+                    write!(f, "1 ")?;
+                } else {
+                    write!(f, "0 ")?;
+                }
+            }
+            writeln!(f)?;
+        }
+        write!(f, "                ")?;
+        write!(f, "   A B C D E F H")?;
+        Ok(())
+    }
+}
 
 impl BitAnd for Bitboard {
     type Output = Bitboard;
