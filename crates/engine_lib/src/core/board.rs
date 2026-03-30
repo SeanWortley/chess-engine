@@ -2,7 +2,9 @@ use crate::core::bitboard::Bitboard;
 use crate::core::square::Square;
 use std::fmt;
 
-#[derive(Debug)]
+// Clone is for naive copy-make move gen
+
+#[derive(Clone, Debug)]
 pub struct Board {
     bitboards: [[Bitboard; 6]; 2],
     squares: [Option<Piece>; 64],
@@ -13,7 +15,7 @@ pub struct Board {
     fullmove_counter: u8,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CastlingRights(u8);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
