@@ -5,6 +5,10 @@ use std::fmt;
 pub struct Square(u8);
 
 impl Square {
+    pub fn from_index(index: u8) -> Self {
+        Square(index)
+    }
+
     pub fn new(file: u8, rank: u8) -> Self {
         Square(rank * 8 + file)
     }
