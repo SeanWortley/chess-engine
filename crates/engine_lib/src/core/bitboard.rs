@@ -16,13 +16,13 @@ impl fmt::Display for Bitboard {
                 if self.has_square(Square::new(file, rank)) {
                     write!(f, "1 ")?;
                 } else {
-                    write!(f, "0 ")?;
+                    write!(f, ". ")?;
                 }
             }
             writeln!(f)?;
         }
-        write!(f, "                ")?;
-        write!(f, "   A B C D E F H")?;
+        writeln!(f, "   ---------------")?;
+        write!(f, "   A B C D E F G H")?;
         Ok(())
     }
 }
