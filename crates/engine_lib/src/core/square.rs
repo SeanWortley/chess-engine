@@ -5,12 +5,11 @@ use std::fmt;
 pub struct Square(u8);
 
 impl Square {
-    pub fn from_index(index: u8) -> Self {
-        Square(index)
-    }
-
     pub fn new(file: u8, rank: u8) -> Self {
         Square(rank * 8 + file)
+    }
+    pub fn from_index(index: u8) -> Self {
+        Square(index)
     }
     pub fn from_name(name: &str) -> Self {
         let mut chars = name.chars();
@@ -63,6 +62,12 @@ mod tests {
         assert_eq!(square.file(), 4);
         assert_eq!(square.rank(), 2);
         assert_eq!(square.index(), 20);
+    }
+
+    #[test]
+    fn test_from_index() {
+        let square = Square::from_index(0);
+        assert_eq!(square.index(), 0);
     }
 
     #[test]
