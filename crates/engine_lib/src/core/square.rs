@@ -1,3 +1,4 @@
+use core::panic;
 use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -6,6 +7,28 @@ pub struct Square(u8);
 impl Square {
     pub fn new(file: u8, rank: u8) -> Self {
         Square(rank * 8 + file)
+    }
+    pub fn from_name(name: &str) -> Self {
+        let mut chars = name.chars();
+
+        let file_char = match chars.next() {
+            Some(character) => character,
+            None => {
+                panic!("Null File Char")
+            }
+        };
+
+        let rank_char = match chars.next() {
+            Some(character) => character,
+            None => {
+                panic!("Null Rank Char")
+            }
+        };
+
+        let file = file_char as u8 - b'a';
+        let rank = rank_char as u8 - b'1';
+
+        Square::new(file, rank)
     }
     pub fn index(self) -> u8 {
         self.0
@@ -36,6 +59,14 @@ mod tests {
         assert_eq!(square.file(), 4);
         assert_eq!(square.rank(), 2);
         assert_eq!(square.index(), 20);
+    }
+
+    #[test]
+    fn test_from_name() {
+        let mut square = Square::from_name("a1");
+        assert_eq!(square.index(), 0);
+        square = Square::from_name("h8");
+        assert_eq!(square.index(), 63);
     }
 
     #[test]
