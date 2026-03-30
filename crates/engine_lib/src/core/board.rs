@@ -2,23 +2,26 @@ use crate::core::bitboard::Bitboard;
 use crate::core::square::Square;
 
 pub struct Board {
-    white_pawns: Bitboard,
-    white_knights: Bitboard,
-    white_bishops: Bitboard,
-    white_rooks: Bitboard,
-    white_queens: Bitboard,
-    white_king: Bitboard,
-
-    black_pawns: Bitboard,
-    black_knights: Bitboard,
-    black_bishops: Bitboard,
-    black_rooks: Bitboard,
-    black_queens: Bitboard,
-    black_king: Bitboard,
-
+    bitboards: [[Bitboard; 6]; 2], // 2D array, indexed with enums (color, then piece)
     to_move: Color,
     castling: CastlingRights,
     en_passant: Option<Square>,
+}
+
+// For nicer indexing :)
+pub enum Color {
+    White = 0,
+    Black = 1,
+}
+
+// For nicer indexing :)
+pub enum Piece {
+    Pawn = 0,
+    Knight = 1,
+    Bishop = 2,
+    Rook = 3,
+    Queen = 4,
+    King = 5,
 }
 
 pub struct Color(bool);
