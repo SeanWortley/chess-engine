@@ -1,3 +1,4 @@
+use crate::core::board::*;
 // 16 bits for move encoding, per the wiki :)
 // Very solid case to be made for 32 bit, but I lack the expertise to reason beyond the established starting path of 16 bits
 
@@ -33,11 +34,49 @@ impl Move {
     const SQUARE_MASK: u16 = 0b111111; // For origin and destination squares
     const FLAGS_MASK: u16 = 0b1111;
 
-    pub fn new(origin_raw: u8, destination_raw: u8, flags_raw: u16) -> Self {
+    fn new(origin_raw: u8, destination_raw: u8, flags_raw: u16) -> Self {
         let origin = (origin_raw as u16) << Move::ORIGIN_SHIFT;
         let destination = (destination_raw as u16) << Move::DESTINATION_SHIFT;
         let flags = flags_raw << Move::FLAGS_SHIFT;
         Move(origin | destination | flags)
+    }
+    pub fn quiet(origin: u8, destination: u8) -> Self {
+        Move::new(origin, destination, flags::QUIET)
+    }
+    pub fn double_pawn_push(origin: u8, destination: u8) -> Self {
+        Move::new(origin, destination, flags::DOUBLE_PAWN_PUSH)
+    }
+    pub fn capture(origin: u8, destination: u8) -> Self {
+        Move::new(origin, destination, flags::CAPTURE)
+    }
+    pub fn en_passant(origin: u8, destination: u8) -> Self {
+        Move::new(origin, destination, flags::EP_CAPTURE)
+    }
+    pub fn king_castle(origin: u8, destination: u8) -> Self {
+        Move::new(origin, destination, flags::KING_CASTLE)
+    }
+    pub fn queen_castle(origin: u8, destination: u8) -> Self {
+        Move::new(origin, destination, flags::QUEEN_CASTLE)
+    }
+    pub fn promotion(origin: u8, destination: u8, piece: PieceKind) -> Self {
+        let flag = match piece {
+            PieceKind::Knight => flags::KNIGHT_PROMOTION,
+            PieceKind::Bishop => flags::BISHOP_PROMOTION,
+            PieceKind::Rook => flags::ROOK_PROMOTION,
+            PieceKind::Queen => flags::QUEEN_PROMOTION,
+            _ => panic!("Invalid promotion piece"),
+        };
+        Move::new(origin, destination, flag)
+    }
+    pub fn promotion_capture(origin: u8, destination: u8, piece: PieceKind) -> Self {
+        let flag = match piece {
+            PieceKind::Knight => flags::KNIGHT_PROMO_CAPTURE,
+            PieceKind::Bishop => flags::BISHOP_PROMO_CAPTURE,
+            PieceKind::Rook => flags::ROOK_PROMO_CAPTURE,
+            PieceKind::Queen => flags::QUEEN_PROMO_CAPTURE,
+            _ => panic!("Invalid promotion piece"),
+        };
+        Move::new(origin, destination, flag)
     }
 
     pub fn origin(self) -> u8 {
@@ -46,7 +85,6 @@ impl Move {
     pub fn destination(self) -> u8 {
         ((self.0 >> Move::DESTINATION_SHIFT) & Move::SQUARE_MASK) as u8
     }
-
     fn flags(self) -> u16 {
         (self.0 >> Move::FLAGS_SHIFT) & Move::FLAGS_MASK
     }
@@ -67,5 +105,50 @@ impl Move {
     }
     pub fn is_promotion(self) -> bool {
         self.flags() & 0b1000 != 0
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_quiet() {
+        let origin: u8 = 0;
+        let destination: u8 = 12;
+        assert!(!Move::quiet(origin, destination).is_capture());
+        assert!(!Move::quiet(origin, destination).is_promotion());
+        assert!(!Move::quiet(origin, destination).is_castling());
+        assert!(!Move::quiet(origin, destination).is_double_pawn_push());
+    }
+
+    #[test]
+    fn test_double_pawn_push() {
+        assert!(Move::double_pawn_push(0, 12).is_double_pawn_push());
+    }
+
+    #[test]
+    fn test_capture() {
+        assert!(Move::capture(0, 12).is_capture());
+        assert!(Move::en_passant(0, 12).is_capture());
+    }
+
+    #[test]
+    fn test_castling() {
+        assert!(Move::king_castle(0, 12).is_castling());
+        assert!(Move::queen_castle(0, 12).is_castling());
+    }
+
+    #[test]
+    fn test_promotion() {
+        let piece = PieceKind::Queen;
+        assert!(Move::promotion(0, 12, piece).is_promotion());
+        assert!(!Move::promotion(0, 12, piece).is_capture());
+    }
+
+    #[test]
+    fn test_promotion_capture() {
+        let piece = PieceKind::Queen;
+        assert!(Move::promotion_capture(0, 12, piece).is_promotion());
+        assert!(Move::promotion_capture(0, 12, piece).is_capture());
     }
 }
