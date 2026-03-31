@@ -75,6 +75,7 @@ impl Not for Bitboard {
 
 impl Iterator for BitboardIter {
     type Item = u8;
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop_lsb()
     }
@@ -83,28 +84,36 @@ impl Iterator for BitboardIter {
 impl Bitboard {
     pub const EMPTY: Bitboard = Bitboard(0);
     pub const FULL: Bitboard = Bitboard(u64::MAX);
+    #[inline]
     pub fn inner(self) -> u64 {
         self.0
     }
+    #[inline]
     pub fn from_square(square: Square) -> Self {
         debug_assert!(square.index() < 64); // Don't trust squares >:(
         Bitboard(1u64 << square.index())
     }
+    #[inline]
     pub fn add_square(&mut self, square: Square) {
         *self |= Bitboard::from_square(square);
     }
+    #[inline]
     pub fn remove_square(&mut self, square: Square) {
         *self &= !Bitboard::from_square(square);
     }
+    #[inline]
     pub fn has_square(self, square: Square) -> bool {
         (self & Bitboard::from_square(square)) != Bitboard::EMPTY
     }
+    #[inline]
     pub fn count(self) -> u32 {
         self.0.count_ones()
     }
+    #[inline]
     pub fn is_empty(self) -> bool {
         self == Bitboard::EMPTY
     }
+    #[inline]
     pub fn pop_lsb(&mut self) -> Option<u8> {
         if self.0 == 0 {
             return None;
@@ -113,6 +122,7 @@ impl Bitboard {
         self.0 &= self.0 - 1; // -1 certainly removes last bit, and potentially generates new bits beneath that, so &ing the two removes exactly 1 bit
         Some(index)
     }
+    #[inline]
     pub fn iter(self) -> BitboardIter {
         BitboardIter(self)
     }
