@@ -1,4 +1,6 @@
 use crate::core::bitboard::Bitboard;
+use crate::core::moves::Move;
+use crate::core::moves::MoveKind;
 use crate::core::square::Square;
 use std::fmt;
 
@@ -12,10 +14,10 @@ pub struct Board {
     castling: CastlingRights,
     en_passant: Option<Square>,
     halfmove_clock: u8,
-    fullmove_counter: u8,
+    fullmove_counter: u16,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CastlingRights(u8);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -80,12 +82,17 @@ impl Board {
     }
 
     #[inline]
+    pub fn get_piece(&self, square: Square) -> Option<Piece> {
+        self.squares[square.index() as usize]
+    }
+
+    #[inline]
     pub fn bitboard(&self, color: Color, kind: PieceKind) -> Bitboard {
         self.bitboards[color as usize][kind as usize]
     }
 
     #[inline]
-    pub fn occupied(self) -> Bitboard {
+    pub fn occupied(&self) -> Bitboard {
         let mut occupied = Bitboard::EMPTY;
         for color in self.bitboards.iter() {
             for bitboard in color.iter() {
@@ -96,12 +103,156 @@ impl Board {
     }
 
     #[inline]
-    pub fn occupied_by(self, color: Color) -> Bitboard {
+    pub fn occupied_by(&self, color: Color) -> Bitboard {
         let mut occupied = Bitboard::EMPTY;
         for bitboard in self.bitboards[color as usize].iter() {
             occupied |= *bitboard
         }
         occupied
+    }
+    // To Do: Add error passing on invalid move, should make perft debugging easier :)
+    #[inline]
+    pub fn apply(&mut self, mv: Move) {
+        let origin = Square::from_index(mv.origin());
+        let destination = Square::from_index(mv.destination());
+
+        let piece = self.set_piece(None, origin);
+        if piece == None {
+            panic!("Moving an empty square are we?")
+        };
+        let moving_piece = piece.expect("This should never happen");
+
+        let captured_piece = if mv.is_capture() {
+            if mv.kind() == MoveKind::EnPassantCapture {
+                Some(Piece {
+                    color: self.to_move.opponent(),
+                    kind: PieceKind::Pawn,
+                })
+            } else {
+                self.get_piece(destination)
+            }
+        } else {
+            None
+        };
+
+        match mv.kind() {
+            MoveKind::Quiet => {
+                self.set_piece(piece, destination);
+            }
+            MoveKind::DoublePawnPush => {
+                self.set_piece(piece, destination);
+
+                // Add en passant
+                let ep_square = if self.to_move == Color::White {
+                    Square::from_index(origin.index() + 8)
+                } else {
+                    Square::from_index(origin.index() - 8)
+                };
+                self.en_passant = Some(ep_square);
+            }
+            MoveKind::KingCastle => {
+                self.set_piece(piece, destination);
+                let other = Piece {
+                    color: self.to_move,
+                    kind: PieceKind::Rook,
+                };
+                if self.to_move == Color::White {
+                    self.set_piece(Some(other), Square::from_name("f1"));
+                    self.set_piece(None, Square::from_name("h1"));
+                } else {
+                    self.set_piece(Some(other), Square::from_name("f8"));
+                    self.set_piece(None, Square::from_name("h8"));
+                }
+            }
+            MoveKind::QueenCastle => {
+                self.set_piece(piece, destination);
+                let other = Piece {
+                    color: self.to_move,
+                    kind: PieceKind::Rook,
+                };
+                if self.to_move == Color::White {
+                    self.set_piece(Some(other), Square::from_name("d1"));
+                    self.set_piece(None, Square::from_name("a1"));
+                } else {
+                    self.set_piece(Some(other), Square::from_name("d8"));
+                    self.set_piece(None, Square::from_name("a8"));
+                }
+            }
+            MoveKind::Capture => {
+                self.set_piece(piece, destination); // set_piece should take care of bitboard manipulation
+            }
+            MoveKind::EnPassantCapture => {
+                self.set_piece(piece, destination);
+                let eliminated_square = if self.to_move == Color::White {
+                    Square::from_index(destination.index() - 8)
+                } else {
+                    Square::from_index(destination.index() + 8)
+                };
+                self.set_piece(None, eliminated_square);
+            }
+            MoveKind::Promotion(kind) => {
+                let promoted_to = Piece {
+                    color: self.to_move,
+                    kind,
+                };
+                self.set_piece(Some(promoted_to), destination);
+            }
+            MoveKind::PromotionCapture(kind) => {
+                let promoted_to = Piece {
+                    color: self.to_move,
+                    kind,
+                };
+                self.set_piece(Some(promoted_to), destination);
+            }
+        }
+
+        match moving_piece.kind {
+            PieceKind::King => {
+                if moving_piece.color == Color::White {
+                    self.castling.0 &=
+                        !(CastlingRights::WHITE_KINGSIDE | CastlingRights::WHITE_QUEENSIDE);
+                } else {
+                    self.castling.0 &=
+                        !(CastlingRights::BLACK_KINGSIDE | CastlingRights::BLACK_QUEENSIDE);
+                }
+            }
+            PieceKind::Rook => match origin.index() {
+                0 => self.castling.0 &= !CastlingRights::WHITE_QUEENSIDE,
+                7 => self.castling.0 &= !CastlingRights::WHITE_KINGSIDE,
+                56 => self.castling.0 &= !CastlingRights::BLACK_QUEENSIDE,
+                63 => self.castling.0 &= !CastlingRights::BLACK_KINGSIDE,
+                _ => {}
+            },
+            _ => {}
+        }
+
+        if let Some(captured) = captured_piece {
+            if captured.kind == PieceKind::Rook {
+                match destination.index() {
+                    0 => self.castling.0 &= !CastlingRights::WHITE_QUEENSIDE,
+                    7 => self.castling.0 &= !CastlingRights::WHITE_KINGSIDE,
+                    56 => self.castling.0 &= !CastlingRights::BLACK_QUEENSIDE,
+                    63 => self.castling.0 &= !CastlingRights::BLACK_KINGSIDE,
+                    _ => {}
+                }
+            }
+        }
+
+        if mv.is_capture() || moving_piece.kind == PieceKind::Pawn {
+            self.halfmove_clock = 0;
+        } else {
+            self.halfmove_clock += 1;
+        }
+
+        if !mv.is_double_pawn_push() {
+            self.en_passant = None
+        }
+
+        if self.to_move == Color::Black {
+            self.fullmove_counter += 1;
+        }
+
+        self.to_move = self.to_move.opponent();
     }
 
     pub fn from_fen(fen: &str) -> Self {
@@ -130,7 +281,7 @@ impl Board {
         };
 
         let castling = fields.next().expect("Missing castling rights");
-        board.castling = CastlingRights(0);
+        board.castling = CastlingRights(CastlingRights::NO_RIGHTS);
         for char in castling.chars() {
             match char {
                 '-' => break,
@@ -178,16 +329,44 @@ impl Board {
             'k' => PieceKind::King,
             _ => panic!("Invalid piece character: {}", char),
         };
-        self.add_piece(color, kind, index);
+        let piece = Piece { color, kind };
+        let square = Square::from_index(index);
+        self.set_piece(Some(piece), square);
     }
 
-    pub fn add_piece(&mut self, color: Color, piece_kind: PieceKind, index: u8) {
-        let square = Square::from_index(index);
-        self.bitboards[color as usize][piece_kind as usize].add_square(square);
-        self.squares[index as usize] = Some(Piece {
-            color,
-            kind: piece_kind,
-        });
+    #[inline]
+    fn set_piece(&mut self, new: Option<Piece>, square: Square) -> Option<Piece> {
+        let old = self.squares[square.index() as usize]; // This should be cleaned up later
+        self.squares[square.index() as usize] = new;
+        if old == new {
+            panic!("How the fuck did that happen?");
+        }
+        // Was old something or nothing?
+        match old {
+            Some(piece) => {
+                self.bitboards[piece.color as usize][piece.kind as usize].remove_square(square); // Remove what was
+            }
+            None => {}
+        }
+        // Are we setting a piece or a null piece?
+        match new {
+            Some(piece) => {
+                self.bitboards[piece.color as usize][piece.kind as usize].add_square(square); // Add what will be
+            }
+            None => {}
+        }
+        old
+    }
+
+    #[inline]
+    pub fn add_piece(&mut self, color: Color, kind: PieceKind, square: Square) {
+        let piece = Piece { color, kind };
+        self.set_piece(Some(piece), square);
+    }
+
+    #[inline]
+    pub fn remove_piece(&mut self, square: Square) -> Option<Piece> {
+        self.set_piece(None, square)
     }
 }
 
@@ -197,6 +376,7 @@ impl CastlingRights {
     pub const WHITE_QUEENSIDE: u8 = 0b0010;
     pub const BLACK_KINGSIDE: u8 = 0b0100;
     pub const BLACK_QUEENSIDE: u8 = 0b1000;
+    pub const NO_RIGHTS: u8 = 0b0000;
 }
 
 impl Color {
@@ -317,18 +497,78 @@ mod tests {
     #[test]
     fn test_add_piece() {
         let mut board = Board::empty();
-        board.add_piece(Color::White, PieceKind::Queen, 27);
+        let square = Square::from_index(27);
+        board.add_piece(Color::White, PieceKind::Queen, square);
+        let piece = Piece {
+            color: Color::White,
+            kind: PieceKind::Queen,
+        };
+
+        assert_eq!(board.get_piece(square), Some(piece));
+        assert!(
+            board
+                .bitboard(Color::White, PieceKind::Queen)
+                .has_square(square)
+        );
+    }
+
+    #[test]
+    fn test_set_piece() {
+        let mut board = Board::empty();
+        let square = Square::from_index(27);
+        let white_queen = Piece {
+            color: Color::White,
+            kind: PieceKind::Queen,
+        };
+        let black_knight = Piece {
+            color: Color::Black,
+            kind: PieceKind::Knight,
+        };
+
+        assert_eq!(board.set_piece(Some(white_queen), square), None);
+        assert_eq!(board.get_piece(square), Some(white_queen));
+        assert!(
+            board
+                .bitboard(Color::White, PieceKind::Queen)
+                .has_square(square)
+        );
+
         assert_eq!(
-            board.squares[27],
+            board.set_piece(Some(black_knight), square),
+            Some(white_queen)
+        );
+        assert_eq!(board.get_piece(square), Some(black_knight));
+        assert!(
+            !board
+                .bitboard(Color::White, PieceKind::Queen)
+                .has_square(square)
+        );
+        assert!(
+            board
+                .bitboard(Color::Black, PieceKind::Knight)
+                .has_square(square)
+        );
+    }
+
+    #[test]
+    fn test_remove_piece() {
+        let mut board = Board::empty();
+        let square = Square::from_index(27);
+        board.add_piece(Color::White, PieceKind::Queen, square);
+
+        let removed = board.remove_piece(square);
+        assert_eq!(
+            removed,
             Some(Piece {
                 color: Color::White,
                 kind: PieceKind::Queen
             })
         );
+        assert_eq!(board.get_piece(square), None);
         assert!(
-            board
+            !board
                 .bitboard(Color::White, PieceKind::Queen)
-                .has_square(Square::from_index(27))
+                .has_square(square)
         );
     }
 
@@ -345,7 +585,7 @@ mod tests {
     #[test]
     fn test_occupied() {
         let board = Board::starting_position();
-        let occupied = board.clone().occupied();
+        let occupied = board.occupied();
 
         assert_eq!(occupied.count(), 32);
         assert!(occupied.has_square(Square::from_name("a1")));
@@ -356,8 +596,8 @@ mod tests {
     #[test]
     fn test_occupied_by() {
         let board = Board::starting_position();
-        let white_occupied = board.clone().occupied_by(Color::White);
-        let black_occupied = board.clone().occupied_by(Color::Black);
+        let white_occupied = board.occupied_by(Color::White);
+        let black_occupied = board.occupied_by(Color::Black);
 
         assert_eq!(white_occupied.count(), 16);
         assert_eq!(black_occupied.count(), 16);

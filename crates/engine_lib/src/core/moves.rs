@@ -6,14 +6,14 @@ use crate::core::board::*;
 /// [0..5]   from/origin square (6 bits)
 /// [6..11]  to/destination square (6 bits)
 /// [12..15] flags (4 bits)
-#[derive(Clone, Copy, Debug)]
+#[derive(Copy, Clone)]
 pub struct Move(u16);
 
 /// Ripped straight from the wiki babyyyyyy
 pub mod flags {
     pub const QUIET: u16 = 0b0000; // Not special
     pub const DOUBLE_PAWN_PUSH: u16 = 0b0001;
-    pub const KING_CASTLE: u16 = 0b0010; // Don't need this for standard chess, but ntil I know better, I'll just follow the wiki :)
+    pub const KING_CASTLE: u16 = 0b0010; // Don't need this for standard chess, but until I know better, I'll just follow the wiki :)
     pub const QUEEN_CASTLE: u16 = 0b0011;
     pub const CAPTURE: u16 = 0b0100; // Can look this up, as we'll need to for PieceKind, but oh well for now
     pub const EP_CAPTURE: u16 = 0b0101;
@@ -25,6 +25,19 @@ pub mod flags {
     pub const BISHOP_PROMO_CAPTURE: u16 = 0b1101;
     pub const ROOK_PROMO_CAPTURE: u16 = 0b1110;
     pub const QUEEN_PROMO_CAPTURE: u16 = 0b1111;
+}
+
+// For use in Board.apply()
+#[derive(Debug, PartialEq)]
+pub enum MoveKind {
+    Quiet,
+    DoublePawnPush,
+    KingCastle,
+    QueenCastle,
+    Capture,
+    EnPassantCapture,
+    Promotion(PieceKind),
+    PromotionCapture(PieceKind),
 }
 
 impl Default for Move {
@@ -111,6 +124,26 @@ impl Move {
         (self.0 >> Move::FLAGS_SHIFT) & Move::FLAGS_MASK
     }
     #[inline]
+    pub fn kind(self) -> MoveKind {
+        match self.flags() {
+            flags::QUIET => MoveKind::Quiet,
+            flags::DOUBLE_PAWN_PUSH => MoveKind::DoublePawnPush,
+            flags::KING_CASTLE => MoveKind::KingCastle,
+            flags::QUEEN_CASTLE => MoveKind::QueenCastle,
+            flags::CAPTURE => MoveKind::Capture,
+            flags::EP_CAPTURE => MoveKind::EnPassantCapture,
+            flags::KNIGHT_PROMOTION => MoveKind::Promotion(PieceKind::Knight),
+            flags::BISHOP_PROMOTION => MoveKind::Promotion(PieceKind::Bishop),
+            flags::ROOK_PROMOTION => MoveKind::Promotion(PieceKind::Rook),
+            flags::QUEEN_PROMOTION => MoveKind::Promotion(PieceKind::Queen),
+            flags::KNIGHT_PROMO_CAPTURE => MoveKind::PromotionCapture(PieceKind::Knight),
+            flags::BISHOP_PROMO_CAPTURE => MoveKind::PromotionCapture(PieceKind::Bishop),
+            flags::ROOK_PROMO_CAPTURE => MoveKind::PromotionCapture(PieceKind::Rook),
+            flags::QUEEN_PROMO_CAPTURE => MoveKind::PromotionCapture(PieceKind::Queen),
+            _ => panic!("Invalid flags"),
+        }
+    }
+    #[inline]
     pub fn is_none(self) -> bool {
         self.0 == 0
     }
@@ -179,5 +212,35 @@ mod tests {
         let piece = PieceKind::Queen;
         assert!(Move::promotion_capture(ORIGIN, DESTINATION, piece).is_promotion());
         assert!(Move::promotion_capture(ORIGIN, DESTINATION, piece).is_capture());
+    }
+
+    #[test]
+    fn test_kind() {
+        assert_eq!(Move::quiet(ORIGIN, DESTINATION).kind(), MoveKind::Quiet);
+        assert_eq!(
+            Move::double_pawn_push(ORIGIN, DESTINATION).kind(),
+            MoveKind::DoublePawnPush
+        );
+        assert_eq!(Move::capture(ORIGIN, DESTINATION).kind(), MoveKind::Capture);
+        assert_eq!(
+            Move::en_passant(ORIGIN, DESTINATION).kind(),
+            MoveKind::EnPassantCapture
+        );
+        assert_eq!(
+            Move::king_castle(ORIGIN, DESTINATION).kind(),
+            MoveKind::KingCastle
+        );
+        assert_eq!(
+            Move::queen_castle(ORIGIN, DESTINATION).kind(),
+            MoveKind::QueenCastle
+        );
+        assert_eq!(
+            Move::promotion(ORIGIN, DESTINATION, PieceKind::Queen).kind(),
+            MoveKind::Promotion(PieceKind::Queen)
+        );
+        assert_eq!(
+            Move::promotion_capture(ORIGIN, DESTINATION, PieceKind::Knight).kind(),
+            MoveKind::PromotionCapture(PieceKind::Knight)
+        );
     }
 }
