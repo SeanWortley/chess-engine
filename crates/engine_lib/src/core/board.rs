@@ -2,7 +2,9 @@ use crate::core::bitboard::Bitboard;
 use crate::core::square::Square;
 use std::fmt;
 
-#[derive(Debug)]
+// Clone is for naive copy-make move gen
+
+#[derive(Clone, Debug)]
 pub struct Board {
     bitboards: [[Bitboard; 6]; 2],
     squares: [Option<Piece>; 64],
@@ -13,7 +15,7 @@ pub struct Board {
     fullmove_counter: u8,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CastlingRights(u8);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -77,8 +79,29 @@ impl Board {
         Board::from_fen(Board::START_FEN)
     }
 
+    #[inline]
     pub fn bitboard(&self, color: Color, kind: PieceKind) -> Bitboard {
         self.bitboards[color as usize][kind as usize]
+    }
+
+    #[inline]
+    pub fn occupied(self) -> Bitboard {
+        let mut occupied = Bitboard::EMPTY;
+        for color in self.bitboards.iter() {
+            for bitboard in color.iter() {
+                occupied |= *bitboard;
+            }
+        }
+        occupied
+    }
+
+    #[inline]
+    pub fn occupied_by(self, color: Color) -> Bitboard {
+        let mut occupied = Bitboard::EMPTY;
+        for bitboard in self.bitboards[color as usize].iter() {
+            occupied |= *bitboard
+        }
+        occupied
     }
 
     pub fn from_fen(fen: &str) -> Self {
@@ -177,6 +200,7 @@ impl CastlingRights {
 }
 
 impl Color {
+    #[inline]
     pub fn opponent(self) -> Self {
         match self {
             Color::White => Color::Black,
@@ -316,6 +340,33 @@ mod tests {
             board.bitboard(Color::Black, PieceKind::Rook).pop_lsb(),
             Some(Square::from_name("a8").index())
         );
+    }
+
+    #[test]
+    fn test_occupied() {
+        let board = Board::starting_position();
+        let occupied = board.clone().occupied();
+
+        assert_eq!(occupied.count(), 32);
+        assert!(occupied.has_square(Square::from_name("a1")));
+        assert!(occupied.has_square(Square::from_name("e8")));
+        assert!(!occupied.has_square(Square::from_name("e4")));
+    }
+
+    #[test]
+    fn test_occupied_by() {
+        let board = Board::starting_position();
+        let white_occupied = board.clone().occupied_by(Color::White);
+        let black_occupied = board.clone().occupied_by(Color::Black);
+
+        assert_eq!(white_occupied.count(), 16);
+        assert_eq!(black_occupied.count(), 16);
+
+        assert!(white_occupied.has_square(Square::from_name("a1")));
+        assert!(!white_occupied.has_square(Square::from_name("a8")));
+
+        assert!(black_occupied.has_square(Square::from_name("a8")));
+        assert!(!black_occupied.has_square(Square::from_name("a1")));
     }
 
     #[test]
