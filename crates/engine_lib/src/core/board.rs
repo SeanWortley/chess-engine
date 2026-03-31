@@ -209,49 +209,41 @@ impl Board {
         match moving_piece.kind {
             PieceKind::King => {
                 if moving_piece.color == Color::White {
-                    self.castling.0 &=
-                        !(CastlingRights::WHITE_KINGSIDE | CastlingRights::WHITE_QUEENSIDE);
+                    self.castling
+                        .remove(CastlingRights::WHITE_KINGSIDE | CastlingRights::WHITE_QUEENSIDE);
                 } else {
-                    self.castling.0 &=
-                        !(CastlingRights::BLACK_KINGSIDE | CastlingRights::BLACK_QUEENSIDE);
+                    self.castling
+                        .remove(CastlingRights::BLACK_KINGSIDE | CastlingRights::BLACK_QUEENSIDE);
                 }
             }
-            PieceKind::Rook => match origin.index() {
-                0 => self.castling.0 &= !CastlingRights::WHITE_QUEENSIDE,
-                7 => self.castling.0 &= !CastlingRights::WHITE_KINGSIDE,
-                56 => self.castling.0 &= !CastlingRights::BLACK_QUEENSIDE,
-                63 => self.castling.0 &= !CastlingRights::BLACK_KINGSIDE,
-                _ => {}
-            },
+            PieceKind::Rook => self.castling.remove(CastlingRights::home_mask(origin)),
             _ => {}
         }
 
         if let Some(captured) = captured_piece {
             if captured.kind == PieceKind::Rook {
-                match destination.index() {
-                    0 => self.castling.0 &= !CastlingRights::WHITE_QUEENSIDE,
-                    7 => self.castling.0 &= !CastlingRights::WHITE_KINGSIDE,
-                    56 => self.castling.0 &= !CastlingRights::BLACK_QUEENSIDE,
-                    63 => self.castling.0 &= !CastlingRights::BLACK_KINGSIDE,
-                    _ => {}
-                }
+                self.castling.remove(CastlingRights::home_mask(destination));
             }
         }
 
+        // Update halfmove
         if mv.is_capture() || moving_piece.kind == PieceKind::Pawn {
             self.halfmove_clock = 0;
         } else {
             self.halfmove_clock += 1;
         }
 
+        // Update en passant
         if !mv.is_double_pawn_push() {
             self.en_passant = None
         }
 
+        // Update fulmovve
         if self.to_move == Color::Black {
             self.fullmove_counter += 1;
         }
 
+        // Update to_move
         self.to_move = self.to_move.opponent();
     }
 
@@ -377,6 +369,27 @@ impl CastlingRights {
     pub const BLACK_KINGSIDE: u8 = 0b0100;
     pub const BLACK_QUEENSIDE: u8 = 0b1000;
     pub const NO_RIGHTS: u8 = 0b0000;
+
+    #[inline]
+    pub fn add(&mut self, mask: u8) {
+        self.0 |= mask;
+    }
+
+    #[inline]
+    pub fn remove(&mut self, mask: u8) {
+        self.0 &= !mask;
+    }
+
+    #[inline]
+    pub fn home_mask(square: Square) -> u8 {
+        match square.index() {
+            0 => Self::WHITE_QUEENSIDE,
+            7 => Self::WHITE_KINGSIDE,
+            56 => Self::BLACK_QUEENSIDE,
+            63 => Self::BLACK_KINGSIDE,
+            _ => 0,
+        }
+    }
 }
 
 impl Color {
@@ -409,6 +422,10 @@ impl Piece {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn idx(name: &str) -> u8 {
+        Square::from_name(name).index()
+    }
 
     #[test]
     fn test_starting_position() {
@@ -607,6 +624,25 @@ mod tests {
 
         assert!(black_occupied.has_square(Square::from_name("a8")));
         assert!(!black_occupied.has_square(Square::from_name("a1")));
+    }
+
+    #[test]
+    fn test_apply() {
+        let mut board = Board::starting_position();
+
+        board.apply(Move::quiet(idx("g1"), idx("f3")));
+
+        assert_eq!(
+            board.get_piece(Square::from_name("f3")),
+            Some(Piece {
+                color: Color::White,
+                kind: PieceKind::Knight,
+            })
+        );
+        assert_eq!(board.get_piece(Square::from_name("g1")), None);
+        assert_eq!(board.to_move, Color::Black);
+        assert_eq!(board.halfmove_clock, 1);
+        assert_eq!(board.fullmove_counter, 1);
     }
 
     #[test]
