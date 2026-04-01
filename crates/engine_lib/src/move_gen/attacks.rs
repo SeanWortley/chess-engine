@@ -1,5 +1,5 @@
 use crate::{
-    core::{board::*, move_list::*, square::*},
+    core::{board::*, move_list::*},
     move_gen::naive::NaiveMoveGenerator,
     transition::copy_make::CopyMakeTransition,
 };
@@ -24,7 +24,7 @@ impl Attacks {
         yucky_generator.generate_pseudo_legal(board, &mut moves);
 
         for mv in moves.iter() {
-            let target_square = Square::from_index(mv.destination());
+            let target_square = mv.destination();
             let target_piece = board.get_piece(target_square);
 
             if let Some(target_piece) = target_piece {

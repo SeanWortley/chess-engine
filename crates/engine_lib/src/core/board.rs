@@ -119,8 +119,8 @@ impl Board {
     // To Do: Add error passing on invalid move, should make perft debugging easier :)
     #[inline]
     pub fn apply(&mut self, mv: Move) {
-        let origin = Square::from_index(mv.origin());
-        let destination = Square::from_index(mv.destination());
+        let origin = mv.origin();
+        let destination = mv.destination();
         let move_kind = mv.kind();
         let is_capture = matches!(
             move_kind,
@@ -438,8 +438,8 @@ impl Piece {
 mod tests {
     use super::*;
 
-    fn idx(name: &str) -> u8 {
-        Square::from_name(name).index()
+    fn idx(name: &str) -> Square {
+        Square::from_name(name)
     }
 
     #[test]

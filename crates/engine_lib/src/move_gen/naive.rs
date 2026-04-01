@@ -62,50 +62,145 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         }
     }
 
-    fn generate_pawn_moves(&self, _context: &mut GenerationContext<'_>, _from: Square) {}
-    fn generate_knight_moves(&self, _context: &mut GenerationContext<'_>, _from: Square) {}
-    fn generate_bishop_moves(&self, _context: &mut GenerationContext<'_>, _from: Square) {}
-    fn generate_rook_moves(&self, _context: &mut GenerationContext<'_>, _from: Square) {}
-    fn generate_queen_moves(&self, context: &mut GenerationContext<'_>, from: Square) {
+    fn generate_pawn_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
+        let (directions, starting_rank): ([Direction; 3], u8) = if context.color == Color::White {
+            ([North, NorthWest, NorthEast], 1)
+        } else {
+            ([South, SouthWest, SouthEast], 6)
+        };
+
+        if Self::try_pawn_push(context, origin, directions[0]) && (origin.rank() == starting_rank) {
+            Self::try_double_pawn_push(context, origin, directions[0]);
+        }
+        Self::try_pawn_capture(context, origin, directions[1]);
+        Self::try_pawn_capture(context, origin, directions[2]);
+    }
+    fn generate_knight_moves(&self, _context: &mut GenerationContext<'_>, _origin: Square) {}
+    fn generate_bishop_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
+        for direction in [NorthEast, SouthEast, SouthWest, NorthWest] {
+            let mut current = origin;
+            while let Some(next) = Self::try_sliding_step(context, current, origin, direction) {
+                current = next;
+            }
+        }
+    }
+    fn generate_rook_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
+        for direction in [North, East, South, West] {
+            let mut current = origin;
+            while let Some(next) = Self::try_sliding_step(context, current, origin, direction) {
+                current = next;
+            }
+        }
+    }
+    fn generate_queen_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         for direction in [
             North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest,
         ] {
-            let mut current = from;
-            while let Some(next) = Self::try_step(context, from, current, direction) {
+            let mut current = origin;
+            while let Some(next) = Self::try_sliding_step(context, current, origin, direction) {
                 current = next;
             }
         }
     }
     fn generate_king_moves(&self, _context: &mut GenerationContext<'_>, _from: Square) {}
 
-    fn try_step(
+    fn try_pawn_capture(context: &mut GenerationContext<'_>, origin: Square, direction: Direction) {
+    }
+
+    fn try_pawn_push(
         context: &mut GenerationContext<'_>,
         origin: Square,
-        current: Square,
         direction: Direction,
-    ) -> Option<Square> {
-        let (dx, dy) = direction.offset();
-        let from = current;
+    ) -> bool {
+        let board = context.board;
 
-        let next_file = from.file() as i8 + dx;
-        let next_rank = from.rank() as i8 + dy;
-        if !(0..8).contains(&next_file) || !(0..8).contains(&next_rank) {
-            return None;
+        let (x, y) = direction.offset();
+        let file = (origin.file() as i8 + x) as u8;
+        let rank = (origin.rank() as i8 + y) as u8;
+
+        let destination = Square::new(file, rank);
+
+        match board.get_piece(destination) {
+            Some(_target_piece) => {
+                return false;
+            }
+            None => {
+                if (rank == 7) || (rank == 0) {
+                    context
+                        .moves
+                        .push(Move::promotion(origin, destination, Knight));
+                    context
+                        .moves
+                        .push(Move::promotion(origin, destination, Bishop));
+                    context
+                        .moves
+                        .push(Move::promotion(origin, destination, Rook));
+                    context
+                        .moves
+                        .push(Move::promotion(origin, destination, Queen));
+                }
+                context.moves.push(Move::quiet(origin, destination));
+                if (destination.rank() == 1) || (destination.rank() == 6) {}
+            }
         }
+        return true;
+    }
 
-        let destination = Square::new(next_file as u8, next_rank as u8);
-        if let Some(piece) = context.board.get_piece(destination) {
-            if piece.color != context.color {
+    fn try_double_pawn_push(
+        context: &mut GenerationContext<'_>,
+        origin: Square,
+        direction: Direction,
+    ) {
+        let board = context.board;
+
+        let (x, y) = direction.offset();
+        let file = (origin.file() as i8 + 2 * x) as u8;
+        let rank = (origin.rank() as i8 + 2 * y) as u8;
+
+        let destination = Square::new(file, rank);
+
+        match board.get_piece(destination) {
+            Some(_target_piece) => {}
+            None => {
                 context
                     .moves
-                    .push(Move::capture(origin.index(), destination.index()));
+                    .push(Move::double_pawn_push(origin, destination));
             }
+        }
+    }
+
+    fn try_sliding_step(
+        context: &mut GenerationContext<'_>,
+        current: Square,
+        origin: Square,
+        direction: Direction,
+    ) -> Option<Square> {
+        let board = context.board;
+        let color = context.color;
+
+        let (x, y) = direction.offset();
+        let file = current.file() as i8 + x;
+        let rank = current.rank() as i8 + y;
+
+        if !(0..8).contains(&file) || !(0..8).contains(&rank) {
             return None;
         }
 
-        context
-            .moves
-            .push(Move::quiet(origin.index(), destination.index()));
+        let destination = Square::new(file as u8, rank as u8);
+
+        // Check for piece
+        match board.get_piece(destination) {
+            Some(target_piece) => {
+                if target_piece.color == color {
+                    return None;
+                }
+                context.moves.push(Move::capture(origin, destination));
+                return None;
+            }
+            None => {
+                context.moves.push(Move::quiet(origin, destination));
+            }
+        }
         Some(destination)
     }
 }
