@@ -115,6 +115,12 @@ impl Board {
     pub fn apply(&mut self, mv: Move) {
         let origin = Square::from_index(mv.origin());
         let destination = Square::from_index(mv.destination());
+        let move_kind = mv.kind();
+        let is_capture = matches!(
+            move_kind,
+            MoveKind::Capture | MoveKind::EnPassantCapture | MoveKind::PromotionCapture(_)
+        );
+        let is_double_pawn_push = move_kind == MoveKind::DoublePawnPush;
 
         let piece = self.set_piece(None, origin);
         if piece == None {
@@ -122,8 +128,8 @@ impl Board {
         };
         let moving_piece = piece.expect("This should never happen");
 
-        let captured_piece = if mv.is_capture() {
-            if mv.kind() == MoveKind::EnPassantCapture {
+        let captured_piece = if is_capture {
+            if move_kind == MoveKind::EnPassantCapture {
                 Some(Piece {
                     color: self.to_move.opponent(),
                     kind: PieceKind::Pawn,
@@ -135,7 +141,7 @@ impl Board {
             None
         };
 
-        match mv.kind() {
+        match move_kind {
             MoveKind::Quiet => {
                 self.set_piece(piece, destination);
             }
@@ -157,11 +163,11 @@ impl Board {
                     kind: PieceKind::Rook,
                 };
                 if self.to_move == Color::White {
-                    self.set_piece(Some(other), Square::from_name("f1"));
-                    self.set_piece(None, Square::from_name("h1"));
+                    self.set_piece(Some(other), Square::from_index(5));
+                    self.set_piece(None, Square::from_index(7));
                 } else {
-                    self.set_piece(Some(other), Square::from_name("f8"));
-                    self.set_piece(None, Square::from_name("h8"));
+                    self.set_piece(Some(other), Square::from_index(61));
+                    self.set_piece(None, Square::from_index(63));
                 }
             }
             MoveKind::QueenCastle => {
@@ -171,11 +177,11 @@ impl Board {
                     kind: PieceKind::Rook,
                 };
                 if self.to_move == Color::White {
-                    self.set_piece(Some(other), Square::from_name("d1"));
-                    self.set_piece(None, Square::from_name("a1"));
+                    self.set_piece(Some(other), Square::from_index(3));
+                    self.set_piece(None, Square::from_index(0));
                 } else {
-                    self.set_piece(Some(other), Square::from_name("d8"));
-                    self.set_piece(None, Square::from_name("a8"));
+                    self.set_piece(Some(other), Square::from_index(59));
+                    self.set_piece(None, Square::from_index(56));
                 }
             }
             MoveKind::Capture => {
@@ -227,14 +233,14 @@ impl Board {
         }
 
         // Update halfmove
-        if mv.is_capture() || moving_piece.kind == PieceKind::Pawn {
+        if is_capture || moving_piece.kind == PieceKind::Pawn {
             self.halfmove_clock = 0;
         } else {
             self.halfmove_clock += 1;
         }
 
         // Update en passant
-        if !mv.is_double_pawn_push() {
+        if !is_double_pawn_push {
             self.en_passant = None
         }
 
@@ -330,9 +336,7 @@ impl Board {
     fn set_piece(&mut self, new: Option<Piece>, square: Square) -> Option<Piece> {
         let old = self.squares[square.index() as usize]; // This should be cleaned up later
         self.squares[square.index() as usize] = new;
-        if old == new {
-            panic!("How the fuck did that happen?");
-        }
+        debug_assert_ne!(old, new, "Attempted a no-op set_piece mutation");
         // Was old something or nothing?
         match old {
             Some(piece) => {
