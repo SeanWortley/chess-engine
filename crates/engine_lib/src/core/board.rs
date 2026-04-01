@@ -42,6 +42,12 @@ pub enum PieceKind {
     King = 5,
 }
 
+impl AsRef<Board> for Board {
+    fn as_ref(&self) -> &Board {
+        &self
+    }
+}
+
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for rank in (0..8).rev() {
@@ -336,7 +342,7 @@ impl Board {
     fn set_piece(&mut self, new: Option<Piece>, square: Square) -> Option<Piece> {
         let old = self.squares[square.index() as usize]; // This should be cleaned up later
         self.squares[square.index() as usize] = new;
-        debug_assert_ne!(old, new, "Attempted a no-op set_piece mutation");
+        debug_assert_ne!(old, new, "How the fuck did this happen?");
         // Was old something or nothing?
         match old {
             Some(piece) => {
@@ -363,6 +369,11 @@ impl Board {
     #[inline]
     pub fn remove_piece(&mut self, square: Square) -> Option<Piece> {
         self.set_piece(None, square)
+    }
+
+    #[inline]
+    pub fn to_move(&self) -> Color {
+        self.to_move
     }
 }
 
