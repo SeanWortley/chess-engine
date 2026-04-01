@@ -6,6 +6,6 @@ pub mod copy_make;
 
 pub trait TransitionManager {
     type BoardReference;
-    fn make(&mut self, board: &mut Board, mv: Move) -> Self::BoardReference; // The return allows copy-make to return a new Board, and make-unmake to mutate in place :)
+    fn make(&self, board: &mut Board, mv: Move) -> Self::BoardReference; // The return allows copy-make to return a new Board, and make-unmake to mutate in place :)
     // fn unmake(&mut self, board: &mut Board, mv: Move);
 }
