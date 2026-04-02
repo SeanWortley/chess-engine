@@ -116,6 +116,16 @@ impl Board {
         }
         occupied
     }
+    #[inline]
+    pub fn is_en_passant(&self, square: Square) -> bool {
+        self.en_passant == Some(square)
+    }
+
+    #[inline]
+    pub fn rights(&self) -> CastlingRights {
+        self.castling
+    }
+
     // To Do: Add error passing on invalid move, should make perft debugging easier :)
     #[inline]
     pub fn apply(&mut self, mv: Move) {
@@ -169,11 +179,11 @@ impl Board {
                     kind: PieceKind::Rook,
                 };
                 if self.to_move == Color::White {
-                    self.set_piece(Some(other), Square::from_index(5));
-                    self.set_piece(None, Square::from_index(7));
+                    self.set_piece(Some(other), Square::F1);
+                    self.set_piece(None, Square::H1);
                 } else {
-                    self.set_piece(Some(other), Square::from_index(61));
-                    self.set_piece(None, Square::from_index(63));
+                    self.set_piece(Some(other), Square::F8);
+                    self.set_piece(None, Square::H8);
                 }
             }
             MoveKind::QueenCastle => {
@@ -183,11 +193,11 @@ impl Board {
                     kind: PieceKind::Rook,
                 };
                 if self.to_move == Color::White {
-                    self.set_piece(Some(other), Square::from_index(3));
-                    self.set_piece(None, Square::from_index(0));
+                    self.set_piece(Some(other), Square::D1);
+                    self.set_piece(None, Square::A1);
                 } else {
-                    self.set_piece(Some(other), Square::from_index(59));
-                    self.set_piece(None, Square::from_index(56));
+                    self.set_piece(Some(other), Square::D8);
+                    self.set_piece(None, Square::A8);
                 }
             }
             MoveKind::Capture => {
@@ -375,6 +385,13 @@ impl Board {
     pub fn to_move(&self) -> Color {
         self.to_move
     }
+
+    #[inline]
+    pub fn mirror(board: &Board) -> Self {
+        let mut mirror = board.clone();
+        mirror.to_move = mirror.to_move.opponent();
+        mirror
+    }
 }
 
 impl CastlingRights {
@@ -404,6 +421,11 @@ impl CastlingRights {
             63 => Self::BLACK_KINGSIDE,
             _ => 0,
         }
+    }
+
+    #[inline]
+    pub fn has_rights(&self, rights: u8) -> bool {
+        (self.0 & rights) != 0
     }
 }
 

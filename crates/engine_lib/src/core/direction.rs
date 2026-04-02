@@ -8,10 +8,21 @@ pub enum Direction {
     SouthWest,
     West,
     NorthWest,
+
+    // For Knights
+    NorthNorthEast,
+    EastNorthEast,
+    EastSouthEast,
+    SouthSouthEast,
+    SouthSouthWest,
+    WestSouthWest,
+    WestNorthWest,
+    NorthNorthWest,
 }
 
 impl Direction {
     // return tuple (x, y)
+    #[inline]
     pub fn offset(self) -> (i8, i8) {
         match self {
             Direction::North => (0, 1),
@@ -22,6 +33,15 @@ impl Direction {
             Direction::SouthWest => (-1, -1),
             Direction::West => (-1, 0),
             Direction::NorthWest => (-1, 1),
+
+            Direction::NorthNorthEast => (1, 2),
+            Direction::EastNorthEast => (2, 1),
+            Direction::EastSouthEast => (2, -1),
+            Direction::SouthSouthEast => (1, -2),
+            Direction::SouthSouthWest => (-1, -2),
+            Direction::WestSouthWest => (-2, -1),
+            Direction::WestNorthWest => (-2, 1),
+            Direction::NorthNorthWest => (-1, 2),
         }
     }
 }

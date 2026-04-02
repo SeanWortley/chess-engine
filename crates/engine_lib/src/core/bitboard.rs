@@ -29,12 +29,14 @@ impl fmt::Display for Bitboard {
 
 impl BitAnd for Bitboard {
     type Output = Bitboard;
+    #[inline]
     fn bitand(self, other: Bitboard) -> Bitboard {
         Bitboard(self.0 & other.0)
     }
 }
 
 impl BitAndAssign for Bitboard {
+    #[inline]
     fn bitand_assign(&mut self, other: Bitboard) {
         self.0 &= other.0;
     }
@@ -42,12 +44,14 @@ impl BitAndAssign for Bitboard {
 
 impl BitOr for Bitboard {
     type Output = Bitboard;
+    #[inline]
     fn bitor(self, other: Bitboard) -> Bitboard {
         Bitboard(self.0 | other.0)
     }
 }
 
 impl BitOrAssign for Bitboard {
+    #[inline]
     fn bitor_assign(&mut self, other: Bitboard) {
         self.0 |= other.0;
     }
@@ -55,12 +59,14 @@ impl BitOrAssign for Bitboard {
 
 impl BitXor for Bitboard {
     type Output = Bitboard;
+    #[inline]
     fn bitxor(self, other: Bitboard) -> Bitboard {
         Bitboard(self.0 ^ other.0)
     }
 }
 
 impl BitXorAssign for Bitboard {
+    #[inline]
     fn bitxor_assign(&mut self, other: Self) {
         self.0 ^= other.0;
     }
@@ -68,6 +74,7 @@ impl BitXorAssign for Bitboard {
 
 impl Not for Bitboard {
     type Output = Bitboard;
+    #[inline]
     fn not(self) -> Bitboard {
         Bitboard(!self.0)
     }

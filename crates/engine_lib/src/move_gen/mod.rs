@@ -6,5 +6,5 @@ pub mod attacks;
 pub mod naive;
 
 pub trait MoveGenerator {
-    fn generate_moves(&self, board: &mut Board, moves: &mut MoveList);
+    fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList);
 }
