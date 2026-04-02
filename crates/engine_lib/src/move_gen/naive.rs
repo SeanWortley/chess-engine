@@ -270,6 +270,7 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
                     context
                         .moves
                         .push(Move::promotion_capture(origin, destination, Queen));
+                    return;
                 }
                 context.moves.push(Move::capture(origin, destination));
             }
