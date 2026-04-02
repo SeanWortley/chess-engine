@@ -20,7 +20,7 @@ impl Attacks {
     // Generates pseudo-legal moves for board.to_move() and checks whether any capture the enemy king.
     #[inline]
     fn is_naive_gives_check(board: &Board) -> bool {
-        let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition);
+        let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition::new());
         let mut moves = MoveList::new();
 
         yucky_generator.generate_pseudo_legal(board, &mut moves, false);
@@ -40,7 +40,7 @@ impl Attacks {
 
     #[inline]
     pub fn is_under_attack(board: &Board, square: Square) -> bool {
-        let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition);
+        let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition::new());
         let mut moves = MoveList::new();
 
         let opponent_board = Board::mirror(board);
