@@ -1,5 +1,5 @@
 use crate::{
-    core::{board::*, move_list::*},
+    core::{board::*, move_list::*, square::*},
     move_gen::naive::NaiveMoveGenerator,
     transition::copy_make::CopyMakeTransition,
 };
@@ -21,7 +21,7 @@ impl Attacks {
         let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition);
         let mut moves = MoveList::new();
 
-        yucky_generator.generate_pseudo_legal(board, &mut moves);
+        yucky_generator.generate_pseudo_legal(board, &mut moves, false);
 
         for mv in moves.iter() {
             let target_square = mv.destination();
@@ -34,5 +34,34 @@ impl Attacks {
             }
         }
         false
+    }
+
+    pub fn is_under_attack(board: &Board, square: Square) -> bool {
+        let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition);
+        let mut moves = MoveList::new();
+
+        let opponent_board = Board::mirror(board);
+
+        yucky_generator.generate_pseudo_legal(&opponent_board, &mut moves, false);
+
+        for mv in moves.iter() {
+            if square != mv.destination() {
+                continue;
+            }
+
+            // Pseudo move-gen includes pawn forward pushes, which are not attacks.
+            // Keep only diagonal pawn moves as attacking moves.
+            if let Some(piece) = opponent_board.get_piece(mv.origin()) {
+                if piece.kind == PieceKind::Pawn {
+                    let file_delta = mv.destination().file() as i8 - mv.origin().file() as i8;
+                    if file_delta.abs() != 1 {
+                        continue;
+                    }
+                }
+            }
+
+            return true;
+        }
+        return false;
     }
 }
