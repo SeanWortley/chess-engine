@@ -19,6 +19,7 @@ struct GenerationContext<'a> {
 
 pub struct NaiveMoveGenerator<TM: TransitionManager> {
     tm: TM,
+    is_attacked: IsAttackedFn,
 }
 
 impl<TM: TransitionManager> MoveGenerator for NaiveMoveGenerator<TM> {
@@ -29,7 +30,10 @@ impl<TM: TransitionManager> MoveGenerator for NaiveMoveGenerator<TM> {
 
         for mv in pseudo.iter() {
             self.tm.make(board, *mv);
-            if !Attacks::side_to_move_gives_check(board, Algorithm::Naive) {
+
+            let king_board = board.bitboard(board.to_move().opponent(), King);
+            let king_square = Square::from_index((king_board.lsb()).unwrap());
+            if !(self.is_attacked)(board, king_square, board.to_move()) {
                 moves.push(*mv);
             }
             self.tm.unmake(board, *mv);
@@ -38,8 +42,8 @@ impl<TM: TransitionManager> MoveGenerator for NaiveMoveGenerator<TM> {
 }
 
 impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
-    pub fn new(tm: TM) -> Self {
-        NaiveMoveGenerator { tm }
+    pub fn new(tm: TM, is_attacked: IsAttackedFn) -> Self {
+        NaiveMoveGenerator { tm, is_attacked }
     }
     #[inline]
     pub fn generate_pseudo_legal(&self, board: &Board, moves: &mut MoveList, with_castling: bool) {
@@ -143,7 +147,7 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
     }
 
     #[inline]
-    fn try_king_castle(context: &mut GenerationContext<'_>, origin: Square) {
+    fn try_king_castle(&self, context: &mut GenerationContext<'_>, origin: Square) {
         let board = context.board;
         let rights = board.rights();
         match context.color {
@@ -158,8 +162,8 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
                     return;
                 }
                 // In check, or checks in transit?
-                if Attacks::is_under_attack(board, Square::F1)
-                    || Attacks::is_under_attack(board, Square::E1)
+                if (self.is_attacked)(board, Square::F1, context.color.opponent())
+                    || (self.is_attacked)(board, Square::E1, context.color.opponent())
                 {
                     return;
                 }
@@ -177,8 +181,8 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
                     return;
                 }
                 // In check, or checks in transit?
-                if Attacks::is_under_attack(board, Square::F8)
-                    || Attacks::is_under_attack(board, Square::E8)
+                if (self.is_attacked)(board, Square::F8, context.color.opponent())
+                    || (self.is_attacked)(board, Square::E8, context.color.opponent())
                 {
                     return;
                 }
@@ -189,7 +193,7 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
     }
 
     #[inline]
-    fn try_queen_castle(context: &mut GenerationContext<'_>, origin: Square) {
+    fn try_queen_castle(&self, context: &mut GenerationContext<'_>, origin: Square) {
         let board = context.board;
         let rights = board.rights();
         match context.color {
@@ -206,8 +210,8 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
                     return;
                 }
                 // In check, or checks in transit?
-                if Attacks::is_under_attack(board, Square::D1)
-                    || Attacks::is_under_attack(board, Square::E1)
+                if (self.is_attacked)(board, Square::D1, context.color.opponent())
+                    || (self.is_attacked)(board, Square::E1, context.color.opponent())
                 {
                     return;
                 }
@@ -227,8 +231,8 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
                     return;
                 }
                 // In check, or checks in transit?
-                if Attacks::is_under_attack(board, Square::D8)
-                    || Attacks::is_under_attack(board, Square::E8)
+                if (self.is_attacked)(board, Square::D8, context.color.opponent())
+                    || (self.is_attacked)(board, Square::E8, context.color.opponent())
                 {
                     return;
                 }
