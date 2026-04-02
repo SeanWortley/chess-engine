@@ -35,15 +35,21 @@ impl MoveList {
 #[cfg(test)]
 mod tests {
     use super::*;
-    const ORIGIN: u8 = 0;
-    const DESTINATION: u8 = 12;
+    use crate::core::square::Square;
+
+    fn origin() -> Square {
+        Square::from_index(0)
+    }
+    fn destination() -> Square {
+        Square::from_index(12)
+    }
 
     #[test]
     fn test_push() {
         let mut move_list = MoveList::new();
         assert!(move_list.is_empty());
 
-        move_list.push(Move::capture(ORIGIN, DESTINATION));
+        move_list.push(Move::capture(origin(), destination()));
         assert!(!move_list.is_empty());
         assert_eq!(move_list.len(), 1);
     }
@@ -52,7 +58,7 @@ mod tests {
         let mut move_list = MoveList::new();
 
         for _i in 0..3 {
-            move_list.push(Move::capture(ORIGIN, DESTINATION));
+            move_list.push(Move::capture(origin(), destination()));
         }
         assert_eq!(move_list.len(), 3);
     }
