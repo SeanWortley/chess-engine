@@ -23,15 +23,16 @@ pub struct NaiveMoveGenerator<TM: TransitionManager> {
 
 impl<TM: TransitionManager> MoveGenerator for NaiveMoveGenerator<TM> {
     #[inline]
-    fn generate_moves(&self, board: &mut Board, moves: &mut MoveList) {
+    fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
         let mut pseudo = MoveList::new();
         self.generate_pseudo_legal(board, &mut pseudo, true);
 
         for mv in pseudo.iter() {
-            let copy = self.tm.make(board, *mv);
-            if !Attacks::side_to_move_gives_check(copy.as_ref(), Algorithm::Naive) {
+            self.tm.make(board, *mv);
+            if !Attacks::side_to_move_gives_check(board, Algorithm::Naive) {
                 moves.push(*mv);
             }
+            self.tm.unmake(board, *mv);
         }
     }
 }
@@ -270,6 +271,7 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
                     context
                         .moves
                         .push(Move::promotion_capture(origin, destination, Queen));
+                    return;
                 }
                 context.moves.push(Move::capture(origin, destination));
             }
