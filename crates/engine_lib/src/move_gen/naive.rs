@@ -1,4 +1,5 @@
 use crate::core::board::Board;
+use crate::core::board::CastlingRights;
 use crate::core::board::Color;
 use crate::core::board::PieceKind::*;
 use crate::core::direction::Direction;
@@ -21,9 +22,10 @@ pub struct NaiveMoveGenerator<TM: TransitionManager> {
 }
 
 impl<TM: TransitionManager> MoveGenerator for NaiveMoveGenerator<TM> {
+    #[inline]
     fn generate_moves(&self, board: &mut Board, moves: &mut MoveList) {
         let mut pseudo = MoveList::new();
-        self.generate_pseudo_legal(board, &mut pseudo);
+        self.generate_pseudo_legal(board, &mut pseudo, true);
 
         for mv in pseudo.iter() {
             let copy = self.tm.make(board, *mv);
@@ -38,7 +40,8 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
     pub fn new(tm: TM) -> Self {
         NaiveMoveGenerator { tm }
     }
-    pub fn generate_pseudo_legal(&self, board: &Board, moves: &mut MoveList) {
+    #[inline]
+    pub fn generate_pseudo_legal(&self, board: &Board, moves: &mut MoveList, with_castling: bool) {
         let color = board.to_move();
         let mut context = GenerationContext {
             board,
@@ -56,12 +59,13 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
                     Bishop => self.generate_bishop_moves(&mut context, origin),
                     Rook => self.generate_rook_moves(&mut context, origin),
                     Queen => self.generate_queen_moves(&mut context, origin),
-                    King => self.generate_king_moves(&mut context, origin),
+                    King => self.generate_king_moves(&mut context, origin, with_castling),
                 }
             }
         }
     }
 
+    #[inline]
     fn generate_pawn_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         let (directions, starting_rank): ([Direction; 3], u8) = if context.color == Color::White {
             ([North, NorthWest, NorthEast], 1)
@@ -75,7 +79,22 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         Self::try_pawn_capture(context, origin, directions[1]);
         Self::try_pawn_capture(context, origin, directions[2]);
     }
-    fn generate_knight_moves(&self, _context: &mut GenerationContext<'_>, _origin: Square) {}
+    #[inline]
+    fn generate_knight_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
+        for direction in [
+            NorthNorthEast,
+            EastNorthEast,
+            EastSouthEast,
+            SouthSouthEast,
+            SouthSouthWest,
+            WestSouthWest,
+            WestNorthWest,
+            NorthNorthWest,
+        ] {
+            Self::try_sliding_step(context, origin, origin, direction);
+        }
+    }
+    #[inline]
     fn generate_bishop_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         for direction in [NorthEast, SouthEast, SouthWest, NorthWest] {
             let mut current = origin;
@@ -84,6 +103,7 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
             }
         }
     }
+    #[inline]
     fn generate_rook_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         for direction in [North, East, South, West] {
             let mut current = origin;
@@ -92,6 +112,7 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
             }
         }
     }
+    #[inline]
     fn generate_queen_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         for direction in [
             North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest,
@@ -102,11 +123,165 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
             }
         }
     }
-    fn generate_king_moves(&self, _context: &mut GenerationContext<'_>, _from: Square) {}
-
-    fn try_pawn_capture(context: &mut GenerationContext<'_>, origin: Square, direction: Direction) {
+    #[inline]
+    fn generate_king_moves(
+        &self,
+        context: &mut GenerationContext<'_>,
+        origin: Square,
+        with_castling: bool,
+    ) {
+        for direction in [
+            North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest,
+        ] {
+            Self::try_sliding_step(context, origin, origin, direction); // Just once in each direction
+        }
+        if with_castling {
+            Self::try_king_castle(context, origin);
+            Self::try_queen_castle(context, origin);
+        }
     }
 
+    #[inline]
+    fn try_king_castle(context: &mut GenerationContext<'_>, origin: Square) {
+        let board = context.board;
+        let rights = board.rights();
+        match context.color {
+            Color::White => {
+                // Pieces in the way?
+                if !((board.get_piece(Square::F1) == None) && (board.get_piece(Square::G1) == None))
+                {
+                    return;
+                }
+                // Has rights?
+                if !rights.has_rights(CastlingRights::WHITE_KINGSIDE) {
+                    return;
+                }
+                // In check, or checks in transit?
+                if Attacks::is_under_attack(board, Square::F1)
+                    || Attacks::is_under_attack(board, Square::E1)
+                {
+                    return;
+                }
+
+                context.moves.push(Move::king_castle(origin, Square::G1));
+            }
+            Color::Black => {
+                // Pieces in the way?
+                if !((board.get_piece(Square::F8) == None) && (board.get_piece(Square::G8) == None))
+                {
+                    return;
+                }
+                // Has rights?
+                if !rights.has_rights(CastlingRights::BLACK_KINGSIDE) {
+                    return;
+                }
+                // In check, or checks in transit?
+                if Attacks::is_under_attack(board, Square::F8)
+                    || Attacks::is_under_attack(board, Square::E8)
+                {
+                    return;
+                }
+
+                context.moves.push(Move::king_castle(origin, Square::G8));
+            }
+        }
+    }
+
+    #[inline]
+    fn try_queen_castle(context: &mut GenerationContext<'_>, origin: Square) {
+        let board = context.board;
+        let rights = board.rights();
+        match context.color {
+            Color::White => {
+                // Pieces in the way?
+                if !((board.get_piece(Square::B1) == None)
+                    && (board.get_piece(Square::C1) == None)
+                    && (board.get_piece(Square::D1) == None))
+                {
+                    return;
+                }
+                // Has rights?
+                if !rights.has_rights(CastlingRights::WHITE_QUEENSIDE) {
+                    return;
+                }
+                // In check, or checks in transit?
+                if Attacks::is_under_attack(board, Square::D1)
+                    || Attacks::is_under_attack(board, Square::E1)
+                {
+                    return;
+                }
+
+                context.moves.push(Move::queen_castle(origin, Square::C1));
+            }
+            Color::Black => {
+                // Pieces in the way?
+                if !((board.get_piece(Square::B8) == None)
+                    && (board.get_piece(Square::C8) == None)
+                    && (board.get_piece(Square::D8) == None))
+                {
+                    return;
+                }
+                // Has rights?
+                if !rights.has_rights(CastlingRights::BLACK_QUEENSIDE) {
+                    return;
+                }
+                // In check, or checks in transit?
+                if Attacks::is_under_attack(board, Square::D8)
+                    || Attacks::is_under_attack(board, Square::E8)
+                {
+                    return;
+                }
+
+                context.moves.push(Move::queen_castle(origin, Square::C8));
+            }
+        }
+    }
+
+    #[inline]
+    fn try_pawn_capture(context: &mut GenerationContext<'_>, origin: Square, direction: Direction) {
+        let board = context.board;
+
+        let (x, y) = direction.offset();
+        let file = (origin.file() as i8 + x) as u8;
+        let rank = (origin.rank() as i8 + y) as u8;
+
+        // Cant capture outside the board!
+        if !(0..8).contains(&file) {
+            return;
+        }
+
+        let destination = Square::new(file, rank);
+
+        match board.get_piece(destination) {
+            Some(target_piece) => {
+                if target_piece.color == context.color {
+                    return;
+                }
+                if (rank == 7) || (rank == 0) {
+                    context
+                        .moves
+                        .push(Move::promotion_capture(origin, destination, Knight));
+                    context
+                        .moves
+                        .push(Move::promotion_capture(origin, destination, Bishop));
+                    context
+                        .moves
+                        .push(Move::promotion_capture(origin, destination, Rook));
+                    context
+                        .moves
+                        .push(Move::promotion_capture(origin, destination, Queen));
+                }
+                context.moves.push(Move::capture(origin, destination));
+            }
+            None => {
+                if board.is_en_passant(destination) {
+                    context.moves.push(Move::en_passant(origin, destination));
+                }
+            }
+        }
+    }
+
+    #[inline]
     fn try_pawn_push(
         context: &mut GenerationContext<'_>,
         origin: Square,
@@ -138,14 +313,16 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
                     context
                         .moves
                         .push(Move::promotion(origin, destination, Queen));
+                    return false; // Don't need to check for double push on promotion
+                } else {
+                    context.moves.push(Move::quiet(origin, destination));
+                    return true;
                 }
-                context.moves.push(Move::quiet(origin, destination));
-                if (destination.rank() == 1) || (destination.rank() == 6) {}
             }
         }
-        return true;
     }
 
+    #[inline]
     fn try_double_pawn_push(
         context: &mut GenerationContext<'_>,
         origin: Square,
@@ -169,6 +346,7 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         }
     }
 
+    #[inline]
     fn try_sliding_step(
         context: &mut GenerationContext<'_>,
         current: Square,
