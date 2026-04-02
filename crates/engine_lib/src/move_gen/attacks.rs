@@ -12,11 +12,13 @@ pub enum Algorithm {
 }
 
 impl Attacks {
+    #[inline]
     pub fn side_to_move_gives_check(board: &Board, _algorithm: Algorithm) -> bool {
         Attacks::is_naive_gives_check(board)
     }
 
     // Generates pseudo-legal moves for board.to_move() and checks whether any capture the enemy king.
+    #[inline]
     fn is_naive_gives_check(board: &Board) -> bool {
         let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition);
         let mut moves = MoveList::new();
@@ -36,6 +38,7 @@ impl Attacks {
         false
     }
 
+    #[inline]
     pub fn is_under_attack(board: &Board, square: Square) -> bool {
         let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition);
         let mut moves = MoveList::new();
