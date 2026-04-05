@@ -36,12 +36,18 @@ fn is_pawn_attack(context: &RayAttackContext) -> bool {
         [SouthWest, SouthEast]
     };
     for direction in directions {
-        if take_ray_step(context, direction) == Some(context.attacking_color) {
-            return true;
+        match take_ray_step(context, direction) {
+            Some(piece) => {
+                if piece ==  {
+                    return true;
+                }
+            }
+            None => {}
         }
     }
-    return false;
+    false
 }
+
 #[inline]
 fn is_knight_attack(context: &RayAttackContext) -> bool {
     for direction in [
@@ -77,7 +83,7 @@ fn take_ray_step(context: &RayAttackContext<'_>, direction: Direction) -> Option
     // Check for piece
     match board.get_piece(destination) {
         Some(piece) => {
-            return Some(piece.color);
+            return Some(piece);
         }
         None => {
             return None;
