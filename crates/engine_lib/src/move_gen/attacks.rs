@@ -1,3 +1,4 @@
+use crate::core::board::PieceKind::*;
 use crate::core::board::{Board, Color, Piece, PieceKind};
 use crate::core::direction::Direction;
 use crate::core::direction::Direction::*;
@@ -10,6 +11,12 @@ struct RayAttackContext<'a> {
     board: &'a Board,
     square: Square,
     attacking_color: Color,
+}
+
+enum RayStepResult {
+    OffBoard,
+    Empty(Square),
+    Piece(Piece),
 }
 
 // Same logic as ray based move gen :)
@@ -36,11 +43,14 @@ fn is_pawn_attack(context: &RayAttackContext) -> bool {
         [SouthWest, SouthEast]
     };
     for direction in directions {
-        if take_ray_step(context, direction) == Some(context.attacking_color) {
-            return true;
+        if let RayStepResult::Piece(piece) = take_ray_step(context.board, context.square, direction)
+        {
+            if piece.kind == Pawn && piece.color == context.attacking_color {
+                return true;
+            }
         }
     }
-    return false;
+    false
 }
 #[inline]
 fn is_knight_attack(context: &RayAttackContext) -> bool {
@@ -54,33 +64,82 @@ fn is_knight_attack(context: &RayAttackContext) -> bool {
         WestNorthWest,
         NorthNorthWest,
     ] {
-        if take_ray_step(context, direction) == Some(context.attacking_color) {
-            return true;
+        if let RayStepResult::Piece(piece) = take_ray_step(context.board, context.square, direction)
+        {
+            if piece.kind == PieceKind::Knight && piece.color == context.attacking_color {
+                return true;
+            }
         }
     }
-    return false;
+    false
 }
-#[inline]
-fn take_ray_step(context: &RayAttackContext<'_>, direction: Direction) -> Option<Piece> {
-    let board = context.board;
 
+fn is_bishop_attack(context: &RayAttackContext) -> bool {
+    for direction in [NorthEast, SouthEast, SouthWest, NorthWest] {
+        let mut current = context.square;
+        loop {
+            match take_ray_step(context.board, current, direction) {
+                RayStepResult::OffBoard => break,
+                RayStepResult::Empty(next_square) => current = next_square,
+                RayStepResult::Piece(piece) => {
+                    if (piece.kind == Bishop || piece.kind == Queen)
+                        && piece.color == context.attacking_color
+                    {
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    false
+}
+fn is_rook_attack(context: &RayAttackContext) -> bool {
+    for direction in [North, East, South, West] {
+        let mut current = context.square;
+        loop {
+            match take_ray_step(context.board, current, direction) {
+                RayStepResult::OffBoard => break,
+                RayStepResult::Empty(next_square) => current = next_square,
+                RayStepResult::Piece(piece) => {
+                    if (piece.kind == Rook || piece.kind == Queen)
+                        && piece.color == context.attacking_color
+                    {
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    false
+}
+fn is_king_attack(context: &RayAttackContext) -> bool {
+    for direction in [
+        North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest,
+    ] {
+        if let RayStepResult::Piece(piece) = take_ray_step(context.board, context.square, direction)
+        {
+            if piece.kind == PieceKind::King && piece.color == context.attacking_color {
+                return true;
+            }
+        }
+    }
+    false
+}
+fn take_ray_step(board: &Board, origin: Square, direction: Direction) -> RayStepResult {
     let (x, y) = direction.offset();
-    let file = context.square.file() as i8 + x;
-    let rank = context.square.rank() as i8 + y;
+    let file = origin.file() as i8 + x;
+    let rank = origin.rank() as i8 + y;
 
     if !(0..8).contains(&file) || !(0..8).contains(&rank) {
-        return None;
+        return RayStepResult::OffBoard;
     }
 
     let destination = Square::new(file as u8, rank as u8);
 
-    // Check for piece
     match board.get_piece(destination) {
-        Some(piece) => {
-            return Some(piece.color);
-        }
-        None => {
-            return None;
-        }
+        Some(piece) => RayStepResult::Piece(piece),
+        None => RayStepResult::Empty(destination),
     }
 }

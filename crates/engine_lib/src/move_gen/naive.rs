@@ -141,8 +141,8 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
             Self::try_sliding_step(context, origin, origin, direction); // Just once in each direction
         }
         if with_castling {
-            Self::try_king_castle(context, origin);
-            Self::try_queen_castle(context, origin);
+            self.try_king_castle(context, origin);
+            self.try_queen_castle(context, origin);
         }
     }
 
