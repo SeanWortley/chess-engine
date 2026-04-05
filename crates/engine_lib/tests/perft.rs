@@ -29,12 +29,14 @@ fn perft<MG: MoveGenerator, TM: TransitionManager>(
 
 #[cfg(test)]
 mod tests {
+    use engine_lib::move_gen::attacks::ray_is_attacked;
+
     use super::*;
     #[test]
     fn perft_depth_1() {
         let mut board = Board::starting_position();
         let tm = CopyMakeTransition::new();
-        let mut mg = NaiveMoveGenerator::new(tm);
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
         let mut perft_tm = CopyMakeTransition::new();
 
         let result = perft(&mut board, &mut mg, &mut perft_tm, 1);
@@ -45,7 +47,7 @@ mod tests {
     fn perft_depth_2() {
         let mut board = Board::starting_position();
         let tm = CopyMakeTransition::new();
-        let mut mg = NaiveMoveGenerator::new(tm);
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
         let mut perft_tm = CopyMakeTransition::new();
 
         let result = perft(&mut board, &mut mg, &mut perft_tm, 2);
@@ -56,7 +58,7 @@ mod tests {
     fn perft_depth_3() {
         let mut board = Board::starting_position();
         let tm = CopyMakeTransition::new();
-        let mut mg = NaiveMoveGenerator::new(tm);
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
         let mut perft_tm = CopyMakeTransition::new();
 
         let result = perft(&mut board, &mut mg, &mut perft_tm, 3);
@@ -67,7 +69,7 @@ mod tests {
     fn perft_depth_4() {
         let mut board = Board::starting_position();
         let tm = CopyMakeTransition::new();
-        let mut mg = NaiveMoveGenerator::new(tm);
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
         let mut perft_tm = CopyMakeTransition::new();
 
         let result = perft(&mut board, &mut mg, &mut perft_tm, 4);
@@ -75,11 +77,11 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
+    //#[ignore]
     fn perft_depth_5() {
         let mut board = Board::starting_position();
         let tm = CopyMakeTransition::new();
-        let mut mg = NaiveMoveGenerator::new(tm);
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
         let mut perft_tm = CopyMakeTransition::new();
 
         let result = perft(&mut board, &mut mg, &mut perft_tm, 5);
@@ -87,11 +89,11 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
+    //#[ignore]
     fn perft_depth_6() {
         let mut board = Board::starting_position();
         let tm = CopyMakeTransition::new();
-        let mut mg = NaiveMoveGenerator::new(tm);
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
         let mut perft_tm = CopyMakeTransition::new();
 
         let result = perft(&mut board, &mut mg, &mut perft_tm, 6);

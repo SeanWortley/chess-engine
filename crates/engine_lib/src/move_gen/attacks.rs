@@ -1,70 +1,146 @@
-use crate::{
-    core::{board::*, move_list::*, square::*},
-    move_gen::naive::NaiveMoveGenerator,
-    transition::copy_make::CopyMakeTransition,
-};
+use crate::core::board::PieceKind::*;
+use crate::core::board::{Board, Color, Piece, PieceKind};
+use crate::core::direction::Direction;
+use crate::core::direction::Direction::*;
+use crate::core::square::Square;
 
-pub struct Attacks {}
+pub type IsAttackedFn = fn(&Board, Square, Color) -> bool;
 
-pub enum Algorithm {
-    Naive,
-    Bitboards,
+struct RayAttackContext<'a> {
+    // Doesn't live longer than the values inside :)
+    board: &'a Board,
+    square: Square,
+    attacking_color: Color,
 }
 
-impl Attacks {
-    #[inline]
-    pub fn side_to_move_gives_check(board: &Board, _algorithm: Algorithm) -> bool {
-        Attacks::is_naive_gives_check(board)
-    }
+enum RayStepResult {
+    OffBoard,
+    Empty(Square),
+    Piece(Piece),
+}
 
-    // Generates pseudo-legal moves for board.to_move() and checks whether any capture the enemy king.
-    #[inline]
-    fn is_naive_gives_check(board: &Board) -> bool {
-        let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition::new());
-        let mut moves = MoveList::new();
+// Same logic as ray based move gen :)
+#[inline]
+pub fn ray_is_attacked(board: &Board, square: Square, attacking_color: Color) -> bool {
+    let context = RayAttackContext {
+        board,
+        square,
+        attacking_color,
+    };
 
-        yucky_generator.generate_pseudo_legal(board, &mut moves, false);
-
-        for mv in moves.iter() {
-            let target_square = mv.destination();
-            let target_piece = board.get_piece(target_square);
-
-            if let Some(target_piece) = target_piece {
-                if mv.is_capture() && target_piece.kind == PieceKind::King {
-                    return true;
-                }
+    is_pawn_attack(&context)
+        || is_knight_attack(&context)
+        || is_bishop_attack(&context)
+        || is_rook_attack(&context)
+        || is_king_attack(&context)
+}
+#[inline]
+fn is_pawn_attack(context: &RayAttackContext) -> bool {
+    let color = context.attacking_color.opponent();
+    let directions: [Direction; 2] = if color == Color::White {
+        [NorthWest, NorthEast]
+    } else {
+        [SouthWest, SouthEast]
+    };
+    for direction in directions {
+        if let RayStepResult::Piece(piece) = take_ray_step(context.board, context.square, direction)
+        {
+            if piece.kind == Pawn && piece.color == context.attacking_color {
+                return true;
             }
         }
-        false
     }
+    false
+}
 
-    #[inline]
-    pub fn is_under_attack(board: &Board, square: Square) -> bool {
-        let yucky_generator = NaiveMoveGenerator::new(CopyMakeTransition::new());
-        let mut moves = MoveList::new();
-
-        let opponent_board = Board::mirror(board);
-
-        yucky_generator.generate_pseudo_legal(&opponent_board, &mut moves, false);
-
-        for mv in moves.iter() {
-            if square != mv.destination() {
-                continue;
+#[inline]
+fn is_knight_attack(context: &RayAttackContext) -> bool {
+    for direction in [
+        NorthNorthEast,
+        EastNorthEast,
+        EastSouthEast,
+        SouthSouthEast,
+        SouthSouthWest,
+        WestSouthWest,
+        WestNorthWest,
+        NorthNorthWest,
+    ] {
+        if let RayStepResult::Piece(piece) = take_ray_step(context.board, context.square, direction)
+        {
+            if piece.kind == PieceKind::Knight && piece.color == context.attacking_color {
+                return true;
             }
+        }
+    }
+    false
+}
 
-            // Pseudo move-gen includes pawn forward pushes, which are not attacks.
-            // Keep only diagonal pawn moves as attacking moves.
-            if let Some(piece) = opponent_board.get_piece(mv.origin()) {
-                if piece.kind == PieceKind::Pawn {
-                    let file_delta = mv.destination().file() as i8 - mv.origin().file() as i8;
-                    if file_delta.abs() != 1 {
-                        continue;
+fn is_bishop_attack(context: &RayAttackContext) -> bool {
+    for direction in [NorthEast, SouthEast, SouthWest, NorthWest] {
+        let mut current = context.square;
+        loop {
+            match take_ray_step(context.board, current, direction) {
+                RayStepResult::OffBoard => break,
+                RayStepResult::Empty(next_square) => current = next_square,
+                RayStepResult::Piece(piece) => {
+                    if (piece.kind == Bishop || piece.kind == Queen)
+                        && piece.color == context.attacking_color
+                    {
+                        return true;
                     }
+                    break;
                 }
             }
-
-            return true;
         }
-        return false;
+    }
+    false
+}
+fn is_rook_attack(context: &RayAttackContext) -> bool {
+    for direction in [North, East, South, West] {
+        let mut current = context.square;
+        loop {
+            match take_ray_step(context.board, current, direction) {
+                RayStepResult::OffBoard => break,
+                RayStepResult::Empty(next_square) => current = next_square,
+                RayStepResult::Piece(piece) => {
+                    if (piece.kind == Rook || piece.kind == Queen)
+                        && piece.color == context.attacking_color
+                    {
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    false
+}
+fn is_king_attack(context: &RayAttackContext) -> bool {
+    for direction in [
+        North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest,
+    ] {
+        if let RayStepResult::Piece(piece) = take_ray_step(context.board, context.square, direction)
+        {
+            if piece.kind == PieceKind::King && piece.color == context.attacking_color {
+                return true;
+            }
+        }
+    }
+    false
+}
+fn take_ray_step(board: &Board, origin: Square, direction: Direction) -> RayStepResult {
+    let (x, y) = direction.offset();
+    let file = origin.file() as i8 + x;
+    let rank = origin.rank() as i8 + y;
+
+    if !(0..8).contains(&file) || !(0..8).contains(&rank) {
+        return RayStepResult::OffBoard;
+    }
+
+    let destination = Square::new(file as u8, rank as u8);
+
+    match board.get_piece(destination) {
+        Some(piece) => RayStepResult::Piece(piece),
+        None => RayStepResult::Empty(destination),
     }
 }
