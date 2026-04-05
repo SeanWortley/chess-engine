@@ -52,6 +52,7 @@ fn is_pawn_attack(context: &RayAttackContext) -> bool {
     }
     false
 }
+
 #[inline]
 fn is_knight_attack(context: &RayAttackContext) -> bool {
     for direction in [
