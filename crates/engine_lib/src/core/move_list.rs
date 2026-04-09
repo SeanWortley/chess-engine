@@ -1,4 +1,4 @@
-use crate::core::moves::Move;
+use super::Move;
 const MAX_MOVES: usize = 218; // Maximum number of available moves in any chess position :)
 pub struct MoveList {
     moves: [Move; MAX_MOVES],
@@ -35,7 +35,7 @@ impl MoveList {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::square::Square;
+    use crate::Square;
 
     fn origin() -> Square {
         Square::from_index(0)

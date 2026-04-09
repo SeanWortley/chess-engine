@@ -1,6 +1,5 @@
 use super::TransitionManager;
-use crate::core::board::Board;
-use crate::core::moves::Move;
+use crate::{Board, Move};
 
 pub struct CopyMakeTransition {
     history: Vec<Board>,

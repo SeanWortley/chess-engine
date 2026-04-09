@@ -1,7 +1,6 @@
 use rand::random;
 
-use crate::core::board::Board;
-use crate::eval::Evaluator;
+use crate::{Board, Evaluator};
 
 pub struct RandomEvaluator;
 

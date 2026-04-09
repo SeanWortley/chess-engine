@@ -1,6 +1,8 @@
-use crate::core::board::Board;
+use crate::Board;
 
 pub mod random;
+
+pub use random::RandomEvaluator;
 
 pub const NEG_INF: i16 = -30_000;
 pub const POS_INF: i16 = 30_000;

@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "apps/engine",
     "crates/engine_lib",
 ]
 resolver = "2"

@@ -1,14 +1,8 @@
-use crate::core::board::Board;
-use crate::core::board::CastlingRights;
-use crate::core::board::Color;
-use crate::core::board::PieceKind::*;
-use crate::core::direction::Direction;
-use crate::core::direction::Direction::*;
-use crate::core::move_list::MoveList;
-use crate::core::moves::Move;
-use crate::core::square::Square;
+use crate::{
+    Board, CastlingRights, Color, Direction, Direction::*, Move, MoveGenerator, MoveList,
+    PieceKind::*, Square, TransitionManager,
+};
 use crate::move_gen::attacks::*;
-use crate::{move_gen::MoveGenerator, transition::TransitionManager};
 
 struct GenerationContext<'a> {
     // Doesn't live longer than the values inside :)
