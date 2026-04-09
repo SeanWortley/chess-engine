@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "apps/engine",
+    "crates/uci",
     "crates/engine_lib",
 ]
 resolver = "2"
