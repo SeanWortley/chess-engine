@@ -1,4 +1,4 @@
-use crate::core::square::Square;
+use super::Square;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 

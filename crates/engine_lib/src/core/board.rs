@@ -1,7 +1,4 @@
-use crate::core::bitboard::Bitboard;
-use crate::core::moves::Move;
-use crate::core::moves::MoveKind;
-use crate::core::square::Square;
+use super::{Bitboard, Move, MoveKind, Square};
 use std::fmt;
 
 // Clone is for naive copy-make move gen
@@ -87,6 +84,19 @@ impl Board {
         Board::from_fen(Board::START_FEN)
     }
 
+    pub fn material_pieces(&self) -> Bitboard {
+        self.bitboards[Color::White as usize][PieceKind::Pawn as usize]
+            | self.bitboards[Color::White as usize][PieceKind::Bishop as usize]
+            | self.bitboards[Color::White as usize][PieceKind::Knight as usize]
+            | self.bitboards[Color::White as usize][PieceKind::Rook as usize]
+            | self.bitboards[Color::White as usize][PieceKind::Queen as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Pawn as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Bishop as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Knight as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Rook as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Queen as usize]
+    }
+  
     pub fn get_piece(&self, square: Square) -> Option<Piece> {
         self.squares[square.index() as usize]
     }

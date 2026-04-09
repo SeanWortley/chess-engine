@@ -1,5 +1,4 @@
-use crate::core::board::*;
-use crate::core::square::Square;
+use super::{PieceKind, Square};
 // 16 bits for move encoding, per the wiki :)
 // Very solid case to be made for 32 bit, but I lack the expertise to reason beyond the established starting path of 16 bits
 

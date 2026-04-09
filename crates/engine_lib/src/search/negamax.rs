@@ -1,14 +1,7 @@
-use crate::core::board::Board;
-use crate::core::board::Color;
-use crate::core::board::PieceKind;
-use crate::core::move_list::MoveList;
-use crate::core::square::Square;
-use crate::eval::{DRAW, Evaluator, NEG_INF};
-use crate::move_gen::MoveGenerator;
-use crate::move_gen::attacks::IsAttackedFn;
-use crate::search::Move;
-use crate::search::{SearchResult, Searcher};
-use crate::transition::TransitionManager;
+use crate::{
+    Board, Color, DRAW, Evaluator, IsAttackedFn, Move, MoveGenerator, MoveList, NEG_INF, PieceKind,
+    SearchResult, Searcher, Square, TransitionManager,
+};
 
 pub struct PureNegamaxSearcher<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> {
     tm: TM,
@@ -30,7 +23,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> Searcher
         let mut max = NEG_INF;
         let mut leaf_eval: i16;
 
-        // Check for
+        // Check for checkmate or stalemate
         if moves.is_empty() {
             let king_square = Square::from_index(
                 board
@@ -47,8 +40,10 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> Searcher
         }
         for mv in moves.iter() {
             self.tm.make(board, *mv);
-            leaf_eval = -self.negamax_proper(board, self.max_depth.saturating_sub(1));
-            if leaf_eval > max {
+            leaf_eval = self
+                .negamax_proper(board, self.max_depth.saturating_sub(1))
+                .saturating_neg();
+            if leaf_eval >= max {
                 max = leaf_eval;
                 best_move = Some(*mv);
             }
@@ -104,15 +99,19 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> PureNegamaxSearcher
                 max = DRAW;
             };
         }
+        if board.material_pieces().inner() == 0 {
+            return DRAW;
+        }
 
         for mv in moves.iter() {
             self.tm.make(board, *mv);
-            let leaf_eval = -self.negamax_proper(board, depth - 1);
-            if leaf_eval > max {
+            let leaf_eval = self.negamax_proper(board, depth - 1).saturating_neg();
+            if leaf_eval >= max {
                 max = leaf_eval;
             }
             self.tm.unmake(board, *mv);
         }
+
         max
     }
 }

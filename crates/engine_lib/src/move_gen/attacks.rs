@@ -1,8 +1,6 @@
-use crate::core::board::PieceKind::*;
-use crate::core::board::{Board, Color, Piece, PieceKind};
-use crate::core::direction::Direction;
-use crate::core::direction::Direction::*;
-use crate::core::square::Square;
+use crate::Direction::*;
+use crate::PieceKind::*;
+use crate::{Board, Color, Direction, Piece, PieceKind, Square};
 
 pub type IsAttackedFn = fn(&Board, Square, Color) -> bool;
 
