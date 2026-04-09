@@ -1,14 +1,14 @@
 use rand::random;
 
 use crate::core::board::Board;
-use crate::eval::{Evaluation, Evaluator};
+use crate::eval::Evaluator;
 
 pub struct RandomEvaluator;
 
 impl Evaluator for RandomEvaluator {
-    fn evaluate(&self, _board: &Board) -> Evaluation {
-        let num: i16 = random();
-        Evaluation(num)
+    fn evaluate(&self, _board: &Board) -> i16 {
+        let evaluation: i16 = random();
+        evaluation
     }
 }
 
