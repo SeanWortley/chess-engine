@@ -23,11 +23,9 @@ impl Square {
     pub const G8: Self = Self(62);
     pub const H8: Self = Self(63);
 
-    #[inline]
     pub fn new(file: u8, rank: u8) -> Self {
         Square(rank * 8 + file)
     }
-    #[inline]
     pub fn from_index(index: u8) -> Self {
         Square(index)
     }
@@ -53,15 +51,12 @@ impl Square {
 
         Square::new(file, rank)
     }
-    #[inline]
     pub fn index(self) -> u8 {
         self.0
     }
-    #[inline]
     pub fn file(self) -> u8 {
         self.0 % 8
     }
-    #[inline]
     pub fn rank(self) -> u8 {
         self.0 / 8
     }

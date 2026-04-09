@@ -6,27 +6,22 @@ pub struct MoveList {
 }
 
 impl MoveList {
-    #[inline]
     pub fn new() -> Self {
         MoveList {
             moves: [Move::default(); MAX_MOVES],
             len: 0,
         }
     }
-    #[inline]
     pub fn push(&mut self, new_move: Move) {
         self.moves[self.len] = new_move;
         self.len += 1
     }
-    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
-    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
-    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &Move> {
         self.moves[..self.len].iter()
     }

@@ -23,7 +23,6 @@ pub struct NaiveMoveGenerator<TM: TransitionManager> {
 }
 
 impl<TM: TransitionManager> MoveGenerator for NaiveMoveGenerator<TM> {
-    #[inline]
     fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
         let mut pseudo = MoveList::new();
         self.generate_pseudo_legal(board, &mut pseudo, true);
@@ -45,7 +44,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
     pub fn new(tm: TM, is_attacked: IsAttackedFn) -> Self {
         NaiveMoveGenerator { tm, is_attacked }
     }
-    #[inline]
     pub fn generate_pseudo_legal(&self, board: &Board, moves: &mut MoveList, with_castling: bool) {
         let color = board.to_move();
         let mut context = GenerationContext {
@@ -70,7 +68,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         }
     }
 
-    #[inline]
     fn generate_pawn_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         let (directions, starting_rank): ([Direction; 3], u8) = if context.color == Color::White {
             ([North, NorthWest, NorthEast], 1)
@@ -84,7 +81,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         Self::try_pawn_capture(context, origin, directions[1]);
         Self::try_pawn_capture(context, origin, directions[2]);
     }
-    #[inline]
     fn generate_knight_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         for direction in [
             NorthNorthEast,
@@ -99,7 +95,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
             Self::try_sliding_step(context, origin, origin, direction);
         }
     }
-    #[inline]
     fn generate_bishop_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         for direction in [NorthEast, SouthEast, SouthWest, NorthWest] {
             let mut current = origin;
@@ -108,7 +103,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
             }
         }
     }
-    #[inline]
     fn generate_rook_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         for direction in [North, East, South, West] {
             let mut current = origin;
@@ -117,7 +111,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
             }
         }
     }
-    #[inline]
     fn generate_queen_moves(&self, context: &mut GenerationContext<'_>, origin: Square) {
         for direction in [
             North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest,
@@ -128,7 +121,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
             }
         }
     }
-    #[inline]
     fn generate_king_moves(
         &self,
         context: &mut GenerationContext<'_>,
@@ -146,7 +138,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         }
     }
 
-    #[inline]
     fn try_king_castle(&self, context: &mut GenerationContext<'_>, origin: Square) {
         let board = context.board;
         let rights = board.rights();
@@ -192,7 +183,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         }
     }
 
-    #[inline]
     fn try_queen_castle(&self, context: &mut GenerationContext<'_>, origin: Square) {
         let board = context.board;
         let rights = board.rights();
@@ -242,7 +232,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         }
     }
 
-    #[inline]
     fn try_pawn_capture(context: &mut GenerationContext<'_>, origin: Square, direction: Direction) {
         let board = context.board;
 
@@ -287,7 +276,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         }
     }
 
-    #[inline]
     fn try_pawn_push(
         context: &mut GenerationContext<'_>,
         origin: Square,
@@ -328,7 +316,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         }
     }
 
-    #[inline]
     fn try_double_pawn_push(
         context: &mut GenerationContext<'_>,
         origin: Square,
@@ -352,7 +339,6 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         }
     }
 
-    #[inline]
     fn try_sliding_step(
         context: &mut GenerationContext<'_>,
         current: Square,
