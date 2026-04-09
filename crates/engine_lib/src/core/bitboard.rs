@@ -121,6 +121,13 @@ impl Bitboard {
         self == Bitboard::EMPTY
     }
     #[inline]
+    pub fn lsb(self) -> Option<u8> {
+        if self.0 == 0 {
+            return None;
+        }
+        Some(self.0.trailing_zeros() as u8)
+    }
+    #[inline]
     pub fn pop_lsb(&mut self) -> Option<u8> {
         if self.0 == 0 {
             return None;
@@ -219,6 +226,17 @@ mod tests {
         // Does it return true correctly?
         bb.remove_square(square);
         assert!(bb.is_empty());
+    }
+
+    #[test]
+    fn test_lsb() {
+        let mut bb = Bitboard::EMPTY;
+        bb.add_square(Square::new(0, 0));
+        bb.add_square(Square::new(1, 1));
+
+        // Does lsb return the least significant bit without modifying the bitboard?
+        assert_eq!(bb.lsb(), Some(0));
+        assert!(!bb.is_empty());
     }
 
     #[test]
