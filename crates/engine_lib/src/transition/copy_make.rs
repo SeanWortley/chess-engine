@@ -21,7 +21,6 @@ impl Default for CopyMakeTransition {
 }
 
 impl TransitionManager for CopyMakeTransition {
-    #[inline]
     fn make(&mut self, board: &mut Board, mv: Move) {
         self.history.push(board.clone());
         let mut copy = board.clone();
@@ -29,7 +28,6 @@ impl TransitionManager for CopyMakeTransition {
         *board = copy;
     }
 
-    #[inline]
     fn unmake(&mut self, board: &mut Board, _mv: Move) {
         let previous = self
             .history

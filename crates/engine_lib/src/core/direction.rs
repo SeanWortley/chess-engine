@@ -22,7 +22,6 @@ pub enum Direction {
 
 impl Direction {
     // return tuple (x, y)
-    #[inline]
     pub fn offset(self) -> (i8, i8) {
         match self {
             Direction::North => (0, 1),

@@ -77,7 +77,7 @@ mod tests {
     }
 
     #[test]
-    //#[ignore]
+    #[ignore]
     fn perft_depth_5() {
         let mut board = Board::starting_position();
         let tm = CopyMakeTransition::new();
@@ -89,7 +89,7 @@ mod tests {
     }
 
     #[test]
-    //#[ignore]
+    #[ignore]
     fn perft_depth_6() {
         let mut board = Board::starting_position();
         let tm = CopyMakeTransition::new();
