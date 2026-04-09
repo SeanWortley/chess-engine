@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 engine_lib = { path = "../../crates/engine_lib" }
+uci = { path = "../../crates/uci" } 
