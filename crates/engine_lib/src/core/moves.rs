@@ -53,42 +53,33 @@ impl Move {
     const SQUARE_MASK: u16 = 0b111111; // For origin and destination squares
     const FLAGS_MASK: u16 = 0b1111;
 
-    #[inline]
     fn new(origin_raw: u8, destination_raw: u8, flags_raw: u16) -> Self {
         let origin = (origin_raw as u16) << Move::ORIGIN_SHIFT;
         let destination = (destination_raw as u16) << Move::DESTINATION_SHIFT;
         let flags = flags_raw << Move::FLAGS_SHIFT;
         Move(origin | destination | flags)
     }
-    #[inline]
     fn none() -> Self {
         Move(0)
     }
-    #[inline]
     pub fn quiet(origin: Square, destination: Square) -> Self {
         Move::new(origin.index(), destination.index(), flags::QUIET)
     }
-    #[inline]
     pub fn double_pawn_push(origin: Square, destination: Square) -> Self {
         Move::new(origin.index(), destination.index(), flags::DOUBLE_PAWN_PUSH)
     }
-    #[inline]
     pub fn capture(origin: Square, destination: Square) -> Self {
         Move::new(origin.index(), destination.index(), flags::CAPTURE)
     }
-    #[inline]
     pub fn en_passant(origin: Square, destination: Square) -> Self {
         Move::new(origin.index(), destination.index(), flags::EP_CAPTURE)
     }
-    #[inline]
     pub fn king_castle(origin: Square, destination: Square) -> Self {
         Move::new(origin.index(), destination.index(), flags::KING_CASTLE)
     }
-    #[inline]
     pub fn queen_castle(origin: Square, destination: Square) -> Self {
         Move::new(origin.index(), destination.index(), flags::QUEEN_CASTLE)
     }
-    #[inline]
     pub fn promotion(origin: Square, destination: Square, piece: PieceKind) -> Self {
         let flag = match piece {
             PieceKind::Knight => flags::KNIGHT_PROMOTION,
@@ -99,7 +90,6 @@ impl Move {
         };
         Move::new(origin.index(), destination.index(), flag)
     }
-    #[inline]
     pub fn promotion_capture(origin: Square, destination: Square, piece: PieceKind) -> Self {
         let flag = match piece {
             PieceKind::Knight => flags::KNIGHT_PROMO_CAPTURE,
@@ -111,19 +101,15 @@ impl Move {
         Move::new(origin.index(), destination.index(), flag)
     }
 
-    #[inline]
     pub fn origin(self) -> Square {
         Square::from_index(((self.0 >> Move::ORIGIN_SHIFT) & Move::SQUARE_MASK) as u8)
     }
-    #[inline]
     pub fn destination(self) -> Square {
         Square::from_index(((self.0 >> Move::DESTINATION_SHIFT) & Move::SQUARE_MASK) as u8)
     }
-    #[inline]
     fn flags(self) -> u16 {
         (self.0 >> Move::FLAGS_SHIFT) & Move::FLAGS_MASK
     }
-    #[inline]
     pub fn kind(self) -> MoveKind {
         match self.flags() {
             flags::QUIET => MoveKind::Quiet,
@@ -143,31 +129,24 @@ impl Move {
             _ => panic!("Invalid flags"),
         }
     }
-    #[inline]
     pub fn is_none(self) -> bool {
         self.0 == 0
     }
-    #[inline]
     pub fn is_double_pawn_push(self) -> bool {
         self.flags() == flags::DOUBLE_PAWN_PUSH
     }
-    #[inline]
     pub fn is_queen_castling(self) -> bool {
         self.flags() == flags::QUEEN_CASTLE
     }
-    #[inline]
     pub fn is_king_castling(self) -> bool {
         self.flags() == flags::KING_CASTLE
     }
-    #[inline]
     pub fn is_castling(self) -> bool {
         self.is_queen_castling() || self.is_king_castling()
     }
-    #[inline]
     pub fn is_capture(self) -> bool {
         self.flags() & 0b0100 != 0
     }
-    #[inline]
     pub fn is_promotion(self) -> bool {
         self.flags() & 0b1000 != 0
     }

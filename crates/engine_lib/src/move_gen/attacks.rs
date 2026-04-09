@@ -18,7 +18,6 @@ enum RayStepResult {
 }
 
 // Same logic as ray based move gen :)
-#[inline]
 pub fn ray_is_attacked(board: &Board, square: Square, attacking_color: Color) -> bool {
     let context = RayAttackContext {
         board,
@@ -32,7 +31,6 @@ pub fn ray_is_attacked(board: &Board, square: Square, attacking_color: Color) ->
         || is_rook_attack(&context)
         || is_king_attack(&context)
 }
-#[inline]
 fn is_pawn_attack(context: &RayAttackContext) -> bool {
     let color = context.attacking_color.opponent();
     let directions: [Direction; 2] = if color == Color::White {
@@ -51,7 +49,6 @@ fn is_pawn_attack(context: &RayAttackContext) -> bool {
     false
 }
 
-#[inline]
 fn is_knight_attack(context: &RayAttackContext) -> bool {
     for direction in [
         NorthNorthEast,
