@@ -1,4 +1,33 @@
-use crate::{Board, Evaluator, MoveGenerator, MoveList, SearchResult, Searcher};
+use crate::{
+    Board, CopyMakeTransition, Evaluator, MoveGenerator, MoveList, NaiveMoveGenerator,
+    PureNegamaxSearcher, RandomEvaluator, SearchResult, Searcher,
+    move_gen::attacks::ray_is_attacked,
+};
+
+pub type DefaultEngine = Engine<
+    PureNegamaxSearcher<
+        CopyMakeTransition,
+        NaiveMoveGenerator<CopyMakeTransition>,
+        RandomEvaluator,
+    >,
+    NaiveMoveGenerator<CopyMakeTransition>,
+    RandomEvaluator,
+>;
+
+impl DefaultEngine {
+    pub fn default() -> Self {
+        let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
+        let evaluator = RandomEvaluator::new();
+        let searcher = PureNegamaxSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            RandomEvaluator::new(),
+            3,
+            ray_is_attacked,
+        );
+        Engine::new(searcher, mg, evaluator)
+    }
+}
 
 pub struct Engine<S, MG, E>
 where

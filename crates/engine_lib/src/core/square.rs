@@ -51,6 +51,7 @@ impl Square {
 
         Square::new(file, rank)
     }
+    pub fn to_name(self) -> &str {}
     pub fn index(self) -> u8 {
         self.0
     }
