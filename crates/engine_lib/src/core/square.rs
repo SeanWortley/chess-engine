@@ -51,7 +51,16 @@ impl Square {
 
         Square::new(file, rank)
     }
-    pub fn to_name(self) -> &str {}
+    pub fn to_name(self) -> String {
+        let file = self.file();
+        let rank = self.rank();
+
+        let mut name = String::new();
+        name.push((b'a' + file) as char);
+        name.push((b'1' + rank) as char);
+
+        name
+    }
     pub fn index(self) -> u8 {
         self.0
     }

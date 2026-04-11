@@ -49,7 +49,7 @@ where
                         PieceKind::Pawn => {
                             let is_capture = origin.file() != destination.file();
                             // Check for double push
-                            if i8::abs(destination.rank() as i8 - origin.rank() as i8) != 1 {
+                            if i8::abs(destination.rank() as i8 - origin.rank() as i8) == 2 {
                                 mv = Move::double_pawn_push(origin, destination);
                             } else {
                                 match uci_move.promoted_to {
@@ -131,21 +131,35 @@ where
                     board.apply(mv);
                 }
             }
-            UciCommand::Go { depth, movetime } => {
+            //Implement depth later
+            UciCommand::Go {
+                depth: _,
+                movetime: _,
+            } => {
                 let result = engine.search(&mut board);
                 match result.best_move {
                     Some(mv) => {
                         let promoted_to = match mv.kind() {
-                            Movekind::Promotion(PieceKind::Knight) => PieceKind::Knight,
-                            _ => None
-                        }
+                            MoveKind::Promotion(piece) | MoveKind::PromotionCapture(piece) => Some(
+                                match piece {
+                                    PieceKind::Knight => "n",
+                                    PieceKind::Bishop => "b",
+                                    PieceKind::Rook => "r",
+                                    PieceKind::Queen => "q",
+                                    _ => panic!("invalid promotion piece"),
+                                }
+                                .to_string(),
+                            ),
+                            _ => None,
+                        };
                         let uci_move = UciMove {
-                            origin,
-                            destination,
-
-                        }
-                        println("{}")
+                            origin: mv.origin().to_name(),
+                            destination: mv.destination().to_name(),
+                            promoted_to,
+                        };
+                        println!("{}", uci::bestmove(uci_move));
                     }
+                    None => eprintln!("No legal moves!"),
                 }
             }
             UciCommand::Quit => {

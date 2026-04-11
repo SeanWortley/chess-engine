@@ -1,4 +1,4 @@
-use engine_lib::{engine::DefaultEngine, prelude::*};
+use engine_lib::prelude::*;
 mod uci_loop;
 
 fn main() {

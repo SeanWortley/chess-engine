@@ -19,6 +19,6 @@ pub fn id_author(author: &str) -> String {
 pub fn bestmove(mv: UciMove) -> String {
     match mv.promoted_to {
         Some(piece) => format!("{}{}{}", mv.origin, mv.destination, piece),
-        None => format!("{}{}", mv.origin, mv.destination),
+        None => format!("bestmove {}{}", mv.origin, mv.destination),
     }
 }
