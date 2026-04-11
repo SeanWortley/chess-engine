@@ -1,5 +1,5 @@
 use engine_lib::prelude::*;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Write};
 use uci::{UciCommand, parse_command, types::UciMove};
 
 const ID_NAME: &str = "PankBot";
@@ -20,12 +20,12 @@ where
 
         match parse_command(line) {
             UciCommand::Uci => {
-                println!("{}", uci::id_name(ID_NAME));
-                println!("{}", uci::id_author(ID_AUTHOR));
-                println!("{}", uci::uciok());
+                send(&uci::id_name(ID_NAME));
+                send(&uci::id_author(ID_AUTHOR));
+                send(&uci::uciok());
             }
             UciCommand::IsReady => {
-                println!("{}", uci::readyok());
+                send(&uci::readyok());
             }
             UciCommand::UciNewGame => {
                 board = Board::starting_position();
@@ -157,7 +157,7 @@ where
                             destination: mv.destination().to_name(),
                             promoted_to,
                         };
-                        println!("{}", uci::bestmove(uci_move));
+                        send(&uci::bestmove(uci_move));
                     }
                     None => eprintln!("No legal moves!"),
                 }
@@ -170,4 +170,9 @@ where
             }
         }
     }
+}
+
+fn send(msg: &str) {
+    println!("{}", msg);
+    std::io::stdout().flush().unwrap();
 }
