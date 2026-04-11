@@ -1,7 +1,4 @@
-use crate::core::bitboard::Bitboard;
-use crate::core::moves::Move;
-use crate::core::moves::MoveKind;
-use crate::core::square::Square;
+use super::{Bitboard, Move, MoveKind, Square};
 use std::fmt;
 
 // Clone is for naive copy-make move gen
@@ -87,17 +84,27 @@ impl Board {
         Board::from_fen(Board::START_FEN)
     }
 
-    #[inline]
+    pub fn material_pieces(&self) -> Bitboard {
+        self.bitboards[Color::White as usize][PieceKind::Pawn as usize]
+            | self.bitboards[Color::White as usize][PieceKind::Bishop as usize]
+            | self.bitboards[Color::White as usize][PieceKind::Knight as usize]
+            | self.bitboards[Color::White as usize][PieceKind::Rook as usize]
+            | self.bitboards[Color::White as usize][PieceKind::Queen as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Pawn as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Bishop as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Knight as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Rook as usize]
+            | self.bitboards[Color::Black as usize][PieceKind::Queen as usize]
+    }
+  
     pub fn get_piece(&self, square: Square) -> Option<Piece> {
         self.squares[square.index() as usize]
     }
 
-    #[inline]
     pub fn bitboard(&self, color: Color, kind: PieceKind) -> Bitboard {
         self.bitboards[color as usize][kind as usize]
     }
 
-    #[inline]
     pub fn occupied(&self) -> Bitboard {
         let mut occupied = Bitboard::EMPTY;
         for color in self.bitboards.iter() {
@@ -108,7 +115,6 @@ impl Board {
         occupied
     }
 
-    #[inline]
     pub fn occupied_by(&self, color: Color) -> Bitboard {
         let mut occupied = Bitboard::EMPTY;
         for bitboard in self.bitboards[color as usize].iter() {
@@ -116,18 +122,15 @@ impl Board {
         }
         occupied
     }
-    #[inline]
     pub fn is_en_passant(&self, square: Square) -> bool {
         self.en_passant == Some(square)
     }
 
-    #[inline]
     pub fn rights(&self) -> CastlingRights {
         self.castling
     }
 
     // To Do: Add error passing on invalid move, should make perft debugging easier :)
-    #[inline]
     pub fn apply(&mut self, mv: Move) {
         let origin = mv.origin();
         let destination = mv.destination();
@@ -348,7 +351,6 @@ impl Board {
         self.set_piece(Some(piece), square);
     }
 
-    #[inline]
     fn set_piece(&mut self, new: Option<Piece>, square: Square) -> Option<Piece> {
         let old = self.squares[square.index() as usize]; // This should be cleaned up later
         self.squares[square.index() as usize] = new;
@@ -370,23 +372,19 @@ impl Board {
         old
     }
 
-    #[inline]
     pub fn add_piece(&mut self, color: Color, kind: PieceKind, square: Square) {
         let piece = Piece { color, kind };
         self.set_piece(Some(piece), square);
     }
 
-    #[inline]
     pub fn remove_piece(&mut self, square: Square) -> Option<Piece> {
         self.set_piece(None, square)
     }
 
-    #[inline]
     pub fn to_move(&self) -> Color {
         self.to_move
     }
 
-    #[inline]
     pub fn mirror(board: &Board) -> Self {
         let mut mirror = board.clone();
         mirror.to_move = mirror.to_move.opponent();
@@ -402,17 +400,14 @@ impl CastlingRights {
     pub const BLACK_QUEENSIDE: u8 = 0b1000;
     pub const NO_RIGHTS: u8 = 0b0000;
 
-    #[inline]
     pub fn add(&mut self, mask: u8) {
         self.0 |= mask;
     }
 
-    #[inline]
     pub fn remove(&mut self, mask: u8) {
         self.0 &= !mask;
     }
 
-    #[inline]
     pub fn home_mask(square: Square) -> u8 {
         match square.index() {
             0 => Self::WHITE_QUEENSIDE,
@@ -423,14 +418,12 @@ impl CastlingRights {
         }
     }
 
-    #[inline]
     pub fn has_rights(&self, rights: u8) -> bool {
         (self.0 & rights) != 0
     }
 }
 
 impl Color {
-    #[inline]
     pub fn opponent(self) -> Self {
         match self {
             Color::White => Color::Black,

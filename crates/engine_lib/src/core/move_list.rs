@@ -1,4 +1,4 @@
-use crate::core::moves::Move;
+use super::Move;
 const MAX_MOVES: usize = 218; // Maximum number of available moves in any chess position :)
 pub struct MoveList {
     moves: [Move; MAX_MOVES],
@@ -6,27 +6,22 @@ pub struct MoveList {
 }
 
 impl MoveList {
-    #[inline]
     pub fn new() -> Self {
         MoveList {
             moves: [Move::default(); MAX_MOVES],
             len: 0,
         }
     }
-    #[inline]
     pub fn push(&mut self, new_move: Move) {
         self.moves[self.len] = new_move;
         self.len += 1
     }
-    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
-    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
-    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &Move> {
         self.moves[..self.len].iter()
     }
@@ -35,7 +30,7 @@ impl MoveList {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::square::Square;
+    use crate::Square;
 
     fn origin() -> Square {
         Square::from_index(0)

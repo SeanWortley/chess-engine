@@ -3,3 +3,5 @@
 # VSCode
 .vscode/
 *.code-workspace
+
+build_windows

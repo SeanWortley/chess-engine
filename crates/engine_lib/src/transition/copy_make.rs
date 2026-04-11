@@ -1,6 +1,5 @@
 use super::TransitionManager;
-use crate::core::board::Board;
-use crate::core::moves::Move;
+use crate::{Board, Move};
 
 pub struct CopyMakeTransition {
     history: Vec<Board>,
@@ -21,7 +20,6 @@ impl Default for CopyMakeTransition {
 }
 
 impl TransitionManager for CopyMakeTransition {
-    #[inline]
     fn make(&mut self, board: &mut Board, mv: Move) {
         self.history.push(board.clone());
         let mut copy = board.clone();
@@ -29,7 +27,6 @@ impl TransitionManager for CopyMakeTransition {
         *board = copy;
     }
 
-    #[inline]
     fn unmake(&mut self, board: &mut Board, _mv: Move) {
         let previous = self
             .history

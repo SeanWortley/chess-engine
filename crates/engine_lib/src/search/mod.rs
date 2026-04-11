@@ -1,7 +1,8 @@
-use crate::core::board::Board;
-use crate::core::moves::Move;
+use crate::{Board, Move};
 
 pub mod negamax;
+
+pub use negamax::PureNegamaxSearcher;
 
 #[derive(Clone, Copy)]
 pub struct EndGameFlag {}
