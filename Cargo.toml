@@ -2,6 +2,7 @@
 members = [
     "apps/engine",
     "crates/engine_lib",
+    "crates/testing_lib",
     "crates/uci",
 ]
 resolver = "2"
