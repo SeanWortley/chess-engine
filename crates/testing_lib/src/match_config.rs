@@ -5,13 +5,14 @@ pub struct MatchConfig {
     pub constraint: Constraint,
     pub openings: OpeningSource,
     pub sprt_config: SprtConfig,
+    pub max_rounds: u16,
 }
 
 pub enum Constraint {
     FixedDepth(u8),
-    FixedTime(u64),
     NodeBudget(u64),
-    Standard { wtime: u64, btime: u64 },
+    Standard(f64, f64),
+    FixedMoveTime(u64),
 }
 pub enum OpeningSource {
     StartPos,
