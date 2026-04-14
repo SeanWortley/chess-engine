@@ -17,6 +17,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "engine_analyzer"
+version = "0.1.0"
+dependencies = [
+ "testing_lib",
+]
+
+[[package]]
 name = "engine_lib"
 version = "0.1.0"
 dependencies = [

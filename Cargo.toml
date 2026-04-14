@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "apps/engine",
+    "apps/engine_analyzer",
     "crates/engine_lib",
     "crates/testing_lib",
     "crates/uci",

@@ -8,3 +8,19 @@ pub struct TestSpec {
     pub benchmarks: Vec<BenchmarkKind>,
     pub match_config: Option<MatchConfig>,
 }
+
+impl TestSpec {
+    pub fn full(
+        baseline: EngineConfig,
+        candidate: EngineConfig,
+        benchmarks: Vec<BenchmarkKind>,
+        match_config: MatchConfig,
+    ) -> Self {
+        TestSpec {
+            baseline,
+            candidate: Some(candidate),
+            benchmarks,
+            match_config: Some(match_config),
+        }
+    }
+}

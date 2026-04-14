@@ -19,3 +19,19 @@ pub enum OpeningSource {
     Epd(PathBuf),
     Pgn(PathBuf),
 }
+
+impl MatchConfig {
+    pub fn new(
+        constraint: Constraint,
+        openings: OpeningSource,
+        sprt_config: SprtConfig,
+        max_rounds: u16,
+    ) -> Self {
+        MatchConfig {
+            constraint,
+            openings,
+            sprt_config,
+            max_rounds,
+        }
+    }
+}
