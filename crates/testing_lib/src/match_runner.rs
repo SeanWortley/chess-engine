@@ -37,8 +37,8 @@ fn build_args(
     args.push(String::from("-engine"));
     args.push(format!("name={}", baseline.name));
     args.push(format!("cmd={}", baseline.binary_path.to_str().unwrap()));
-    for (i, arg) in baseline.args.iter().enumerate() {
-        args.push(format!("arg{}={}", i + 1, arg));
+    for arg in baseline.args.iter() {
+        args.push(format!("arg={}", arg));
     }
     args.push(String::from("proto=uci"));
 
@@ -46,8 +46,8 @@ fn build_args(
     args.push(String::from("-engine"));
     args.push(format!("name={}", candidate.name));
     args.push(format!("cmd={}", candidate.binary_path.to_str().unwrap()));
-    for (i, arg) in candidate.args.iter().enumerate() {
-        args.push(format!("arg{}={}", i + 1, arg));
+    for arg in candidate.args.iter() {
+        args.push(format!("arg={}", arg));
     }
     args.push(String::from("proto=uci"));
 
