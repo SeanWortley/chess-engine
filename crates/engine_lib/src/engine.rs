@@ -31,7 +31,7 @@ impl BestEngine {
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             MaterialEvaluator::new(),
-            2,
+            3,
             ray_is_attacked,
         );
         Engine::new(searcher, mg, evaluator)
@@ -45,7 +45,7 @@ impl RandomEngine {
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             RandomEvaluator::new(),
-            2,
+            3,
             ray_is_attacked,
         );
         Engine::new(searcher, mg, evaluator)

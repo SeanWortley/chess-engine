@@ -16,7 +16,9 @@ pub fn run(test_spec: &TestSpec) {
     Command::new(cutechess_path())
         .args(args)
         .spawn()
-        .expect("failed to execute cutechess");
+        .expect("failed to execute cutechess")
+        .wait()
+        .expect("failed to wait for cutechess");
 }
 
 // Only works on linux :(
@@ -33,20 +35,20 @@ fn build_args(
 ) -> Vec<String> {
     let mut args = Vec::new();
 
-    // Baseline arg
-    args.push(String::from("-engine"));
-    args.push(format!("name={}", baseline.name));
-    args.push(format!("cmd={}", baseline.binary_path.to_str().unwrap()));
-    for arg in baseline.args.iter() {
-        args.push(format!("arg={}", arg));
-    }
-    args.push(String::from("proto=uci"));
-
     // Candidate arg
     args.push(String::from("-engine"));
     args.push(format!("name={}", candidate.name));
     args.push(format!("cmd={}", candidate.binary_path.to_str().unwrap()));
     for arg in candidate.args.iter() {
+        args.push(format!("arg={}", arg));
+    }
+    args.push(String::from("proto=uci"));
+
+    // Baseline arg
+    args.push(String::from("-engine"));
+    args.push(format!("name={}", baseline.name));
+    args.push(format!("cmd={}", baseline.binary_path.to_str().unwrap()));
+    for arg in baseline.args.iter() {
         args.push(format!("arg={}", arg));
     }
     args.push(String::from("proto=uci"));

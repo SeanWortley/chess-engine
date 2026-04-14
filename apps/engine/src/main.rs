@@ -3,12 +3,11 @@ mod uci_loop;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-
     let engine_kind = args
         .iter()
-        .find(|a| a.starts_with("--engine"))
+        .find(|a| a.starts_with("--engine="))
         .map(|a| a.trim_start_matches("--engine="))
-        .unwrap();
+        .unwrap_or("best");
 
     match engine_kind {
         "random" => {

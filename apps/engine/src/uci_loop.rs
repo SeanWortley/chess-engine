@@ -128,6 +128,7 @@ where
                             }
                         }
                     }
+
                     board.apply(mv);
                 }
             }

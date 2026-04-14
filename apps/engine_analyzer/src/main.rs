@@ -28,7 +28,7 @@ fn main() {
     // Match config
     let constraint = Constraint::FixedDepth(2);
     let openings = OpeningSource::StartPos;
-    let max_rounds = 100;
+    let max_rounds = 5000;
     let match_config = MatchConfig::new(constraint, openings, sprt_config, max_rounds);
 
     // Test spec

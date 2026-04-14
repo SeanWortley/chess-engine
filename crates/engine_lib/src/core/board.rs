@@ -274,7 +274,7 @@ impl Board {
 
     pub fn from_fen(fen: &str) -> Self {
         let mut board = Board::empty();
-        let mut fields = fen.split(' ');
+        let mut fields = fen.split_whitespace();
 
         let arrangement = fields.next().expect("Missing arrangement");
         let mut index = Board::FEN_START_INDEX;

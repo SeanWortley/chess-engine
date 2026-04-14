@@ -99,4 +99,53 @@ mod tests {
         let result = perft(&mut board, &mut mg, &mut perft_tm, 6);
         assert_eq!(result, 119060324u64);
     }
+
+    #[test]
+    fn kiwipete_depth_1() {
+        let mut board =
+            Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+        let tm = CopyMakeTransition::new();
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
+        let mut perft_tm = CopyMakeTransition::new();
+
+        let result = perft(&mut board, &mut mg, &mut perft_tm, 1);
+        assert_eq!(result, 48u64);
+    }
+
+    #[test]
+    fn kiwipete_depth_2() {
+        let mut board =
+            Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+        let tm = CopyMakeTransition::new();
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
+        let mut perft_tm = CopyMakeTransition::new();
+
+        let result = perft(&mut board, &mut mg, &mut perft_tm, 2);
+        assert_eq!(result, 2039u64);
+    }
+
+    #[test]
+    fn kiwipete_depth_3() {
+        let mut board =
+            Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+        let tm = CopyMakeTransition::new();
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
+        let mut perft_tm = CopyMakeTransition::new();
+
+        let result = perft(&mut board, &mut mg, &mut perft_tm, 3);
+        assert_eq!(result, 97862u64);
+    }
+
+    #[test]
+    #[ignore]
+    fn kiwipete_depth_4() {
+        let mut board =
+            Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+        let tm = CopyMakeTransition::new();
+        let mut mg = NaiveMoveGenerator::new(tm, ray_is_attacked);
+        let mut perft_tm = CopyMakeTransition::new();
+
+        let result = perft(&mut board, &mut mg, &mut perft_tm, 4);
+        assert_eq!(result, 4085603u64);
+    }
 }
