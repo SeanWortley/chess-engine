@@ -159,7 +159,10 @@ where
                         };
                         send(&uci::bestmove(uci_move));
                     }
-                    None => eprintln!("No legal moves!"),
+                    None => {
+                        // UCI requires a bestmove response even in terminal positions.
+                        send("bestmove 0000");
+                    }
                 }
             }
             UciCommand::Quit => {

@@ -19,7 +19,7 @@ fn main() {
     let mut candidate_path = PathBuf::new();
     candidate_path.push("target/release/engine");
     let mut candidate_args: Vec<String> = Vec::new();
-    candidate_args.push("--engine=random".to_string());
+    candidate_args.push("--engine=best".to_string());
     let candidate = EngineConfig::new(String::from("v2"), candidate_path, candidate_args);
 
     // Sprt config

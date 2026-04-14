@@ -12,17 +12,15 @@ fn main() {
 
     match engine_kind {
         "random" => {
-            println!("Initialising random engine");
+            eprintln!("Initialising random engine");
             uci_loop::run(RandomEngine::random());
         }
         "best" => {
-            println!("Initialising best engine");
+            eprintln!("Initialising best engine");
             uci_loop::run(BestEngine::best());
         }
         _ => {
             panic!("Preset not found");
         }
     }
-    let engine = BestEngine::best();
-    uci_loop::run(engine)
 }
