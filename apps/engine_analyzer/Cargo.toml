@@ -1,0 +1,7 @@
+[package]
+name = "engine_analyzer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+testing_lib = { path = "../../crates/testing_lib" }
