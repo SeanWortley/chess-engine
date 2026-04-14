@@ -1,5 +1,6 @@
 use crate::Board;
 
+pub mod material;
 pub mod random;
 
 pub use random::RandomEvaluator;

@@ -20,7 +20,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> Searcher
         self.mg.generate_moves(board, &mut moves);
 
         let mut best_move: Option<Move> = None;
-        let mut max = NEG_INF;
+        let mut max = i16::MIN;
         let mut leaf_eval: i16;
 
         // Check for checkmate or stalemate
@@ -43,7 +43,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> Searcher
             leaf_eval = self
                 .negamax_proper(board, self.max_depth.saturating_sub(1))
                 .saturating_neg();
-            if leaf_eval >= max {
+            if best_move.is_none() || leaf_eval > max {
                 max = leaf_eval;
                 best_move = Some(*mv);
             }
@@ -82,7 +82,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> PureNegamaxSearcher
         let mut moves = MoveList::new();
         self.mg.generate_moves(board, &mut moves);
 
-        let mut max = NEG_INF;
+        let mut max = i16::MIN;
 
         // Check for checkmate or stalemate
         if moves.is_empty() {
@@ -106,7 +106,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> PureNegamaxSearcher
         for mv in moves.iter() {
             self.tm.make(board, *mv);
             let leaf_eval = self.negamax_proper(board, depth - 1).saturating_neg();
-            if leaf_eval >= max {
+            if leaf_eval > max {
                 max = leaf_eval;
             }
             self.tm.unmake(board, *mv);

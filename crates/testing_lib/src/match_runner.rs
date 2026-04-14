@@ -7,16 +7,20 @@ use crate::{
 };
 
 pub fn run(test_spec: &TestSpec) {
-    let baseline = &test_spec.baseline;
-    let candidate = test_spec.candidate.as_ref().unwrap_or(&test_spec.baseline);
-    let config = &test_spec.match_config;
+    let baseline = test_spec.baseline();
+    let candidate = test_spec.candidate().unwrap_or(baseline);
+    let config = test_spec
+        .match_config()
+        .expect("match_config must be present when running a cutechess match");
 
-    let args = build_args(&baseline, &candidate, &config.as_ref().unwrap());
+    let args = build_args(baseline, candidate, config);
 
     Command::new(cutechess_path())
         .args(args)
         .spawn()
-        .expect("failed to execute cutechess");
+        .expect("failed to execute cutechess")
+        .wait()
+        .expect("failed to wait for cutechess");
 }
 
 // Only works on linux :(
@@ -33,21 +37,21 @@ fn build_args(
 ) -> Vec<String> {
     let mut args = Vec::new();
 
-    // Baseline arg
-    args.push(String::from("-engine"));
-    args.push(format!("name={}", baseline.name));
-    args.push(format!("cmd={}", baseline.binary_path.to_str().unwrap()));
-    for (i, arg) in baseline.args.iter().enumerate() {
-        args.push(format!("arg{}={}", i + 1, arg));
-    }
-    args.push(String::from("proto=uci"));
-
     // Candidate arg
     args.push(String::from("-engine"));
     args.push(format!("name={}", candidate.name));
     args.push(format!("cmd={}", candidate.binary_path.to_str().unwrap()));
-    for (i, arg) in candidate.args.iter().enumerate() {
-        args.push(format!("arg{}={}", i + 1, arg));
+    for arg in candidate.args.iter() {
+        args.push(format!("arg={}", arg));
+    }
+    args.push(String::from("proto=uci"));
+
+    // Baseline arg
+    args.push(String::from("-engine"));
+    args.push(format!("name={}", baseline.name));
+    args.push(format!("cmd={}", baseline.binary_path.to_str().unwrap()));
+    for arg in baseline.args.iter() {
+        args.push(format!("arg={}", arg));
     }
     args.push(String::from("proto=uci"));
 

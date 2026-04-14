@@ -1,10 +1,19 @@
 use crate::{
     Board, CopyMakeTransition, Evaluator, MoveGenerator, MoveList, NaiveMoveGenerator,
     PureNegamaxSearcher, RandomEvaluator, SearchResult, Searcher,
-    move_gen::attacks::ray_is_attacked,
+    eval::material::MaterialEvaluator, move_gen::attacks::ray_is_attacked,
 };
 
-pub type DefaultEngine = Engine<
+pub type BestEngine = Engine<
+    PureNegamaxSearcher<
+        CopyMakeTransition,
+        NaiveMoveGenerator<CopyMakeTransition>,
+        MaterialEvaluator,
+    >,
+    NaiveMoveGenerator<CopyMakeTransition>,
+    MaterialEvaluator,
+>;
+pub type RandomEngine = Engine<
     PureNegamaxSearcher<
         CopyMakeTransition,
         NaiveMoveGenerator<CopyMakeTransition>,
@@ -14,8 +23,22 @@ pub type DefaultEngine = Engine<
     RandomEvaluator,
 >;
 
-impl DefaultEngine {
-    pub fn default() -> Self {
+impl BestEngine {
+    pub fn best() -> Self {
+        let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
+        let evaluator = MaterialEvaluator::new();
+        let searcher = PureNegamaxSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            MaterialEvaluator::new(),
+            3,
+            ray_is_attacked,
+        );
+        Engine::new(searcher, mg, evaluator)
+    }
+}
+impl RandomEngine {
+    pub fn random() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = RandomEvaluator::new();
         let searcher = PureNegamaxSearcher::new(

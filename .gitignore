@@ -1,5 +1,6 @@
 /target
 /tools/sandbox
+*.pgn
 # VSCode
 .vscode/
 *.code-workspace
