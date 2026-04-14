@@ -7,11 +7,13 @@ use crate::{
 };
 
 pub fn run(test_spec: &TestSpec) {
-    let baseline = &test_spec.baseline;
-    let candidate = test_spec.candidate.as_ref().unwrap_or(&test_spec.baseline);
-    let config = &test_spec.match_config;
+    let baseline = test_spec.baseline();
+    let candidate = test_spec.candidate().unwrap_or(baseline);
+    let config = test_spec
+        .match_config()
+        .expect("match_config must be present when running a cutechess match");
 
-    let args = build_args(&baseline, &candidate, &config.as_ref().unwrap());
+    let args = build_args(baseline, candidate, config);
 
     Command::new(cutechess_path())
         .args(args)
