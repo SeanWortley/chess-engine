@@ -28,3 +28,17 @@ pub enum SprtResult {
     AcceptH1,
     Continue,
 }
+
+pub enum BenchmarkResult {
+    PerftSpeed {
+        nodes: u64,
+        duration_ms: u64,
+        nps: u64,
+    },
+    NodesEvaluated {
+        nodes: u64,
+    },
+    MovesPerSecond {
+        moves_per_second: u64,
+    },
+}

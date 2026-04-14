@@ -1,5 +1,5 @@
 use crate::{
-    Board, CopyMakeTransition, Evaluator, MoveGenerator, MoveList, NaiveMoveGenerator,
+    Board, CopyMakeTransition, Evaluator, Move, MoveGenerator, MoveList, NaiveMoveGenerator,
     PureNegamaxSearcher, RandomEvaluator, SearchResult, Searcher,
     eval::material::MaterialEvaluator, move_gen::attacks::ray_is_attacked,
 };
@@ -89,5 +89,13 @@ where
 
     pub fn evaluate(&self, board: &Board) -> i16 {
         self.evaluator.evaluate(board)
+    }
+
+    pub fn make(&mut self, board: &mut Board, mv: Move) {
+        self.searcher.make(board, mv);
+    }
+
+    pub fn unmake(&mut self, board: &mut Board, mv: Move) {
+        self.searcher.unmake(board, mv);
     }
 }

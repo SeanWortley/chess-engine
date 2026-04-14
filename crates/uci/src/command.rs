@@ -12,6 +12,9 @@ pub enum UciCommand {
         depth: Option<u8>,
         movetime: Option<u64>,
     },
+    GoPerft {
+        depth: u8,
+    },
     Quit,
     Unkown(String),
 }
@@ -46,6 +49,13 @@ pub fn parse_command(input: &str) -> UciCommand {
                     return UciCommand::Position { fen, moves };
                 }
                 "go" => {
+                    let rest = input.trim();
+                    if let Some(perft_part) = rest.strip_prefix("go perft ") {
+                        return UciCommand::GoPerft {
+                            depth: perft_part.trim().parse().expect("Not u8 compatable"),
+                        };
+                    }
+
                     let (_rest, depth) = input.rsplit_once(" ").unwrap();
                     return UciCommand::Go {
                         depth: Some(depth.parse().expect("Not u8 compatable")),

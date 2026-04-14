@@ -56,6 +56,14 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> Searcher
             score: max,
         }
     }
+
+    fn make(&mut self, board: &mut Board, mv: Move) {
+        self.tm.make(board, mv);
+    }
+
+    fn unmake(&mut self, board: &mut Board, mv: Move) {
+        self.tm.unmake(board, mv);
+    }
 }
 
 impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> PureNegamaxSearcher<TM, MG, E> {

@@ -10,13 +10,14 @@ pub mod test_runner;
 pub mod test_spec;
 
 pub use analysis::MatchAnalysis;
-pub use benchmarks::{BenchMarkComparison, BenchmarkKind, BenchmarkResult};
+pub use benchmarks::{BenchMarkComparison, BenchmarkKind};
 pub use engine::EngineConfig;
 pub use match_config::{Constraint, MatchConfig, OpeningSource};
-pub use results::{GameOutcome, GameResult, MatchResults, SprtResult, TestResult};
+pub use results::{BenchmarkResult, GameOutcome, GameResult, MatchResults, SprtResult, TestResult};
 pub use stats::SprtConfig;
 pub use test_runner::run;
 pub use test_spec::TestSpec;
+pub use uci::{UciCommand, UciMove};
 
 pub mod prelude {
     pub use crate::{

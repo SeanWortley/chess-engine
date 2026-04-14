@@ -1,23 +1,9 @@
-use crate::EngineConfig;
+use crate::{BenchmarkResult, EngineConfig};
 
 pub enum BenchmarkKind {
     PerftSpeed { depth: u8 },
     NodesEvaluated { depth: u8 },
     MovesPerSecond,
-}
-
-pub enum BenchmarkResult {
-    PerftSpeed {
-        nodes: u64,
-        duration_ms: u64,
-        nps: u64,
-    },
-    NodesEvaluated {
-        nodes: u64,
-    },
-    MovesPerSecond {
-        moves_per_second: u64,
-    },
 }
 
 pub struct BenchMarkComparison {
@@ -27,7 +13,6 @@ pub struct BenchMarkComparison {
 }
 
 pub fn perft_speed_test(_engine: &EngineConfig, _depth: u8) -> BenchmarkResult {
-    // TODO: implement perft speed benchmark
     BenchmarkResult::PerftSpeed {
         nodes: 0,
         duration_ms: 0,
