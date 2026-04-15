@@ -42,3 +42,8 @@ pub enum BenchmarkResult {
         moves_per_second: u64,
     },
 }
+
+pub struct BenchmarkComparisonResult {
+    pub baseline: BenchmarkResult,
+    pub candidate: BenchmarkResult,
+}

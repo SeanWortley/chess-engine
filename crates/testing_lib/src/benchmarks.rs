@@ -1,4 +1,4 @@
-use crate::{BenchmarkResult, EngineConfig};
+use crate::{BenchmarkResult, EngineConfig, uci_runner};
 
 pub enum BenchmarkKind {
     PerftSpeed { depth: u8 },
@@ -12,7 +12,9 @@ pub struct BenchMarkComparison {
     pub candidate: Option<BenchmarkResult>,
 }
 
-pub fn perft_speed_test(_engine: &EngineConfig, _depth: u8) -> BenchmarkResult {
+pub fn perft_speed_test(engine: &EngineConfig, depth: u8) -> BenchmarkResult {
+    let _result = uci_runner::run_perft_speed(engine, depth);
+
     BenchmarkResult::PerftSpeed {
         nodes: 0,
         duration_ms: 0,

@@ -8,8 +8,8 @@ pub mod results;
 pub mod stats;
 pub mod test_runner;
 pub mod test_spec;
+pub mod uci_runner;
 
-pub use analysis::MatchAnalysis;
 pub use benchmarks::{BenchMarkComparison, BenchmarkKind};
 pub use engine::EngineConfig;
 pub use match_config::{Constraint, MatchConfig, OpeningSource};
@@ -22,7 +22,7 @@ pub use uci::{UciCommand, UciMove};
 pub mod prelude {
     pub use crate::{
         BenchMarkComparison, BenchmarkKind, BenchmarkResult, Constraint, EngineConfig, GameOutcome,
-        GameResult, MatchAnalysis, MatchConfig, MatchResults, OpeningSource, SprtConfig,
-        SprtResult, TestResult, TestSpec, run,
+        GameResult, MatchConfig, MatchResults, OpeningSource, SprtConfig, SprtResult, TestResult,
+        TestSpec, run,
     };
 }
