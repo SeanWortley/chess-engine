@@ -1,6 +1,6 @@
 use crate::{
-    benchmark_runner, match_runner,
-    test_spec::{TestMode, TestSpec},
+    benchmark::runner as benchmark_runner, match_runner,
+    spec::{TestMode, TestSpec},
 };
 
 pub fn run(test_spec: &TestSpec) {

@@ -1,9 +1,8 @@
 use std::{env, path::PathBuf, process::Command};
 
 use crate::{
-    engine::EngineConfig,
-    match_config::{Constraint, MatchConfig, OpeningSource},
-    test_spec::TestSpec,
+    config::{Constraint, EngineConfig, MatchConfig, OpeningSource},
+    spec::TestSpec,
 };
 
 pub fn run(test_spec: &TestSpec) {

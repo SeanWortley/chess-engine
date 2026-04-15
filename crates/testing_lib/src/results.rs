@@ -1,4 +1,4 @@
-use crate::benchmarks::BenchMarkComparison;
+use crate::benchmark::benchmarks::BenchMarkComparison;
 
 pub struct GameResult {
     pub white: String,
