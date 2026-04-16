@@ -1,4 +1,3 @@
-pub mod analysis;
 pub mod benchmark;
 pub mod config;
 pub mod match_runner;
@@ -7,7 +6,7 @@ pub mod runner;
 pub mod spec;
 pub mod uci_runner;
 
-pub use benchmark::{BenchMarkComparison, BenchmarkKind};
+pub use benchmark::{BenchMarkComparison, BenchmarkKind, analysis};
 pub use config::{Constraint, EngineConfig, MatchConfig, OpeningSource, SprtConfig};
 pub use results::{BenchmarkResult, GameOutcome, GameResult, MatchResults, SprtResult, TestResult};
 pub use runner::run;

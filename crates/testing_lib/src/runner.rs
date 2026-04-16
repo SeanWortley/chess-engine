@@ -1,5 +1,5 @@
 use crate::{
-    benchmark::runner as benchmark_runner,
+    benchmark::{analysis as benchmark_analyzer, runner as benchmark_runner},
     match_runner,
     spec::{TestMode, TestSpec},
 };
@@ -16,8 +16,9 @@ pub fn run(test_spec: &TestSpec) {
             match_runner::run(test_spec);
         }
         TestMode::Full => {
-            benchmark_runner::run_comparison(test_spec);
+            let bench_results = benchmark_runner::run_comparison(test_spec);
             match_runner::run(test_spec);
+            let _benchmark_analysis = benchmark_analyzer::analyze_comparison_results(bench_results);
         }
     }
 }
