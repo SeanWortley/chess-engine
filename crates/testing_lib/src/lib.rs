@@ -1,25 +1,22 @@
-pub mod analysis;
-pub mod benchmarks;
-pub mod engine;
-pub mod match_config;
+pub mod benchmark;
+pub mod config;
 pub mod match_runner;
 pub mod results;
-pub mod stats;
-pub mod test_spec;
+pub mod runner;
+pub mod spec;
+pub mod uci_runner;
 
-pub use analysis::MatchAnalysis;
-pub use benchmarks::{BenchMarkComparison, BenchmarkKind, BenchmarkResult};
-pub use engine::EngineConfig;
-pub use match_config::{Constraint, MatchConfig, OpeningSource};
-pub use match_runner::run;
-pub use results::{GameOutcome, GameResult, MatchResults, SprtResult, TestResult};
-pub use stats::SprtConfig;
-pub use test_spec::TestSpec;
+pub use benchmark::{BenchMarkComparison, BenchmarkKind, analysis};
+pub use config::{Constraint, EngineConfig, MatchConfig, OpeningSource, SprtConfig};
+pub use results::{BenchmarkResult, GameOutcome, GameResult, MatchResults, SprtResult, TestResult};
+pub use runner::run;
+pub use spec::TestSpec;
+pub use uci::{UciCommand, UciMove};
 
 pub mod prelude {
-	pub use crate::{
-		BenchMarkComparison, BenchmarkKind, BenchmarkResult, Constraint, EngineConfig,
-		GameOutcome, GameResult, MatchAnalysis, MatchConfig, MatchResults, OpeningSource,
-		SprtConfig, SprtResult, TestResult, TestSpec, run,
-	};
+    pub use crate::{
+        BenchMarkComparison, BenchmarkKind, BenchmarkResult, Constraint, EngineConfig, GameOutcome,
+        GameResult, MatchConfig, MatchResults, OpeningSource, SprtConfig, SprtResult, TestResult,
+        TestSpec, run,
+    };
 }

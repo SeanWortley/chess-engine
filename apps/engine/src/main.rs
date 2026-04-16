@@ -11,11 +11,9 @@ fn main() {
 
     match engine_kind {
         "random" => {
-            eprintln!("Initialising random engine");
             uci_loop::run(RandomEngine::random());
         }
         "best" => {
-            eprintln!("Initialising best engine");
             uci_loop::run(BestEngine::best());
         }
         _ => {
