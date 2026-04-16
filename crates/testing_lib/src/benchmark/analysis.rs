@@ -36,7 +36,7 @@ pub fn analyze_comparison_results(
                     nps: candidate_nps,
                 } => {
                     let delta = candidate_nps as i64 - baseline_nps as i64;
-                    let delta_percentage = delta as f64 / baseline_nps as f64;
+                    let delta_percentage = (delta as f64 * 100.0) / baseline_nps as f64;
 
                     let status = {
                         if delta_percentage > 5 as f64 {

@@ -3,7 +3,7 @@ use crate::{BenchmarkResult, EngineConfig, uci_runner};
 const STARTPOS: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const KIWIPETE: &str = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 const TALKCHESS_BUG_FINDER: &str = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
-const TOTAL_CASES: u8 = 10;
+const TOTAL_CASES: u8 = 11;
 
 pub fn perft_speed_test(engine: &EngineConfig) -> BenchmarkResult {
     let mut nodes_time_sum: (u64, u64) = (0, 0);
