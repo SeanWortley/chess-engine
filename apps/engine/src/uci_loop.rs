@@ -166,6 +166,10 @@ where
                     }
                 }
             }
+            UciCommand::GoPerft { depth } => {
+                let nodes = perft(&mut engine, &mut board, depth);
+                send(&format!("perft {}", nodes));
+            }
             UciCommand::Quit => {
                 return;
             }
@@ -174,6 +178,27 @@ where
             }
         }
     }
+}
+
+fn perft<S, MG, E>(engine: &mut Engine<S, MG, E>, board: &mut Board, depth: u8) -> u64
+where
+    S: Searcher,
+    MG: MoveGenerator,
+    E: Evaluator,
+{
+    if depth == 0 {
+        return 1;
+    }
+
+    let moves = engine.generate_moves(board);
+
+    let mut total: u64 = 0;
+    for mv in moves.iter() {
+        engine.make(board, *mv);
+        total += perft(engine, board, depth - 1);
+        engine.unmake(board, *mv);
+    }
+    total
 }
 
 fn send(msg: &str) {

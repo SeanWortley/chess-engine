@@ -1,6 +1,6 @@
-use crate::benchmarks::BenchmarkKind;
-use crate::engine::EngineConfig;
-use crate::match_config::MatchConfig;
+use crate::benchmark::benchmarks::BenchmarkKind;
+use crate::config::EngineConfig;
+use crate::config::MatchConfig;
 
 pub struct TestSpec {
     mode: TestMode,

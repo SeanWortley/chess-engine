@@ -32,7 +32,8 @@ fn main() {
     let match_config = MatchConfig::new(constraint, openings, sprt_config, max_rounds);
 
     // Test spec
-    let benchmarks: Vec<BenchmarkKind> = Vec::new();
+    let mut benchmarks: Vec<BenchmarkKind> = Vec::new();
+    benchmarks.push(BenchmarkKind::PerftSpeed);
     let test_spec = TestSpec::full(baseline, candidate, benchmarks, match_config);
 
     run(&test_spec);

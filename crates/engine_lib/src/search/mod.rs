@@ -15,4 +15,6 @@ pub struct SearchResult {
 
 pub trait Searcher {
     fn start_search(&mut self, board: &mut Board) -> SearchResult;
+    fn make(&mut self, board: &mut Board, mv: Move);
+    fn unmake(&mut self, board: &mut Board, mv: Move);
 }
