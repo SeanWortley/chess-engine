@@ -1,6 +1,7 @@
 pub mod benchmark;
 pub mod config;
 pub mod match_runner;
+pub mod report;
 pub mod results;
 pub mod runner;
 pub mod spec;
