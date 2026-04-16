@@ -1,6 +1,5 @@
 use crate::{
-    benchmark::perft,
-    BenchmarkKind, BenchmarkResult, TestSpec, results::BenchmarkComparisonResult,
+    BenchmarkKind, BenchmarkResult, TestSpec, benchmark::perft, results::BenchmarkComparisonResult,
 };
 
 pub fn run_solo(test_spec: &TestSpec) -> Vec<BenchmarkResult> {
