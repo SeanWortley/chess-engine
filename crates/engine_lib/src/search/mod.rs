@@ -3,7 +3,9 @@ use crate::{Board, Move};
 
 pub mod control;
 pub mod deepening_search;
+pub mod kernel;
 pub mod negamax;
+pub mod static_eval;
 
 pub use deepening_search::DeepeningSearcher;
 pub use negamax::PureNegamaxSearcher;
@@ -28,4 +30,8 @@ pub trait Searcher {
     // Passed up from transition manager, so engine can use them directly :)
     fn make(&mut self, board: &mut Board, mv: Move);
     fn unmake(&mut self, board: &mut Board, mv: Move);
+}
+
+pub trait LeafPolicy {
+    fn evaluate_leaf(&mut self, board: &mut Board, alpha: i16, beta: i16) -> i16;
 }
