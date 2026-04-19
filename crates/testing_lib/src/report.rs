@@ -5,7 +5,7 @@ pub fn print_report(analysis: Vec<BenchmarkAnalysisRow>) {
         match row.kind {
             BenchmarkKind::PerftSpeed => {
                 println!("=============================");
-                println!("Perft Speed:");
+                println!("Perft Speed");
                 println!("=============================");
                 println!("Baseline: {} nodes/second", row.baseline_value);
                 println!("Candidate: {} nodes/second", row.candidate_value);
