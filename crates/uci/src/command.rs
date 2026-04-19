@@ -11,10 +11,12 @@ pub enum UciCommand {
     Go {
         depth: Option<u8>,
         movetime: Option<u64>,
+        infinite: bool,
     },
     GoPerft {
         depth: u8,
     },
+    Stop,
     Quit,
     Unkown(String),
 }
@@ -49,17 +51,52 @@ pub fn parse_command(input: &str) -> UciCommand {
                     return UciCommand::Position { fen, moves };
                 }
                 "go" => {
-                    let rest = input.trim();
-                    if let Some(perft_part) = rest.strip_prefix("go perft ") {
-                        return UciCommand::GoPerft {
-                            depth: perft_part.trim().parse().expect("Not u8 compatable"),
-                        };
+                    let mut depth: Option<u8> = None;
+                    let mut movetime: Option<u64> = None;
+                    let mut infinite = false;
+                    let tokens: Vec<&str> = input.split_whitespace().collect();
+
+                    let mut i = 1;
+                    while i < tokens.len() {
+                        match tokens[i] {
+                            "depth" => {
+                                if i + 1 < tokens.len() {
+                                    if let Ok(parsed) = tokens[i + 1].parse::<u8>() {
+                                        depth = Some(parsed);
+                                    }
+                                }
+                                i += 2;
+                            }
+                            "movetime" => {
+                                if i + 1 < tokens.len() {
+                                    if let Ok(parsed) = tokens[i + 1].parse::<u64>() {
+                                        movetime = Some(parsed);
+                                    }
+                                }
+                                i += 2;
+                            }
+                            "infinite" => {
+                                infinite = true;
+                                i += 1;
+                            }
+                            "perft" => {
+                                if i + 1 < tokens.len() {
+                                    if let Ok(parsed) = tokens[i + 1].parse::<u8>() {
+                                        return UciCommand::GoPerft { depth: parsed };
+                                    }
+                                }
+                                return UciCommand::Unkown(String::from(input));
+                            }
+                            _ => {
+                                i += 1;
+                            }
+                        }
                     }
 
-                    let (_rest, depth) = input.rsplit_once(" ").unwrap();
                     return UciCommand::Go {
-                        depth: Some(depth.parse().expect("Not u8 compatable")),
-                        movetime: None,
+                        depth,
+                        movetime,
+                        infinite,
                     };
                 }
                 _ => return UciCommand::Unkown(String::from(input)),
@@ -69,6 +106,7 @@ pub fn parse_command(input: &str) -> UciCommand {
             "uci" => return UciCommand::Uci,
             "isready" => return UciCommand::IsReady,
             "ucinewgame" => return UciCommand::UciNewGame,
+            "stop" => return UciCommand::Stop,
             "quit" => return UciCommand::Quit,
             _ => return UciCommand::Unkown(String::from(input)),
         },
@@ -125,6 +163,40 @@ mod tests {
                 assert_eq!(moves[1].destination, "e5");
             }
             _ => panic!("Expected position command"),
+        }
+    }
+
+    #[test]
+    fn parse_go_infinite() {
+        let cmd = parse_command("go infinite");
+        match cmd {
+            UciCommand::Go {
+                depth,
+                movetime,
+                infinite,
+            } => {
+                assert!(depth.is_none());
+                assert!(movetime.is_none());
+                assert!(infinite);
+            }
+            _ => panic!("Expected go command"),
+        }
+    }
+
+    #[test]
+    fn parse_go_wtime_btime() {
+        let cmd = parse_command("go wtime 30000 btime 30000 movestogo 40");
+        match cmd {
+            UciCommand::Go {
+                depth,
+                movetime,
+                infinite,
+            } => {
+                assert!(depth.is_none());
+                assert!(movetime.is_none());
+                assert!(!infinite);
+            }
+            _ => panic!("Expected go command"),
         }
     }
 }

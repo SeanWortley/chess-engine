@@ -1,17 +1,65 @@
 use engine_lib::prelude::*;
 use std::io::{self, BufRead, Write};
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::thread;
+use std::time::Duration;
 use uci::{UciCommand, parse_command, types::UciMove};
 
 const ID_NAME: &str = "PankBot";
 const ID_AUTHOR: &str = "Pank";
 
-pub fn run<S, MG, E>(mut engine: Engine<S, MG, E>)
+enum WorkerCommand {
+    Search {
+        board: Board,
+        constraint: SearchConstraint,
+        control: SearchControl,
+    },
+    Perft {
+        board: Board,
+        depth: u8,
+    },
+    Quit,
+}
+
+fn worker_loop<S, MG, E>(mut engine: Engine<S, MG, E>, command_rx: Receiver<WorkerCommand>)
 where
     S: Searcher,
     MG: MoveGenerator,
     E: Evaluator,
 {
+    while let Ok(command) = command_rx.recv() {
+        match command {
+            WorkerCommand::Search {
+                mut board,
+                constraint,
+                control,
+            } => {
+                let result = engine.search(&mut board, constraint, control);
+                send_bestmove(result);
+            }
+            WorkerCommand::Perft { mut board, depth } => {
+                let nodes = perft(&mut engine, &mut board, depth);
+                send(&format!("perft {}", nodes));
+            }
+            WorkerCommand::Quit => {
+                return;
+            }
+        }
+    }
+}
+
+pub fn run<S, MG, E>(engine: Engine<S, MG, E>)
+where
+    S: Searcher + Send + 'static,
+    MG: MoveGenerator + Send + 'static,
+    E: Evaluator + Send + 'static,
+{
     let mut board = Board::starting_position();
+    let mut control_handle: Option<SearchControl> = None;
+
+    let (command_tx, command_rx): (Sender<WorkerCommand>, Receiver<WorkerCommand>) =
+        mpsc::channel();
+    let worker = thread::spawn(move || worker_loop(engine, command_rx));
 
     let stdin = io::stdin();
     for line in stdin.lock().lines() {
@@ -28,6 +76,9 @@ where
                 send(&uci::readyok());
             }
             UciCommand::UciNewGame => {
+                if let Some(control) = &control_handle {
+                    control.stop();
+                }
                 board = Board::starting_position();
             }
             UciCommand::Position { fen, moves } => {
@@ -132,50 +183,97 @@ where
                     board.apply(mv);
                 }
             }
-            //Implement depth later
+            //Implement depth & movetime later
             UciCommand::Go {
-                depth: _,
-                movetime: _,
+                depth,
+                movetime,
+                infinite,
             } => {
-                let result = engine.search(&mut board);
-                match result.best_move {
-                    Some(mv) => {
-                        let promoted_to = match mv.kind() {
-                            MoveKind::Promotion(piece) | MoveKind::PromotionCapture(piece) => Some(
-                                match piece {
-                                    PieceKind::Knight => "n",
-                                    PieceKind::Bishop => "b",
-                                    PieceKind::Rook => "r",
-                                    PieceKind::Queen => "q",
-                                    _ => panic!("invalid promotion piece"),
-                                }
-                                .to_string(),
-                            ),
-                            _ => None,
-                        };
-                        let uci_move = UciMove {
-                            origin: mv.origin().to_name(),
-                            destination: mv.destination().to_name(),
-                            promoted_to,
-                        };
-                        send(&uci::bestmove(uci_move));
+                let constraint = match (depth, movetime, infinite) {
+                    (Some(depth), _, _) => SearchConstraint::fixed_depth(depth),
+                    (None, Some(movetime), _) => {
+                        SearchConstraint::movetime(Duration::from_millis(movetime))
                     }
-                    None => {
-                        // UCI requires a bestmove response even in terminal positions.
-                        send("bestmove 0000");
-                    }
+                    // For go infinite, search deep and rely on stop/time checks in the search.
+                    (None, None, true) => SearchConstraint::fixed_depth(u8::MAX),
+                    (None, None, false) => SearchConstraint::fixed_depth(3),
+                };
+
+                if let Some(control) = &control_handle {
+                    control.stop();
                 }
+
+                let control = SearchControl::new(constraint);
+                control_handle = Some(control.clone());
+
+                command_tx
+                    .send(WorkerCommand::Search {
+                        board: board.clone(),
+                        constraint,
+                        control,
+                    })
+                    .expect("worker thread is unavailable");
             }
             UciCommand::GoPerft { depth } => {
-                let nodes = perft(&mut engine, &mut board, depth);
-                send(&format!("perft {}", nodes));
+                command_tx
+                    .send(WorkerCommand::Perft {
+                        board: board.clone(),
+                        depth,
+                    })
+                    .expect("worker thread is unavailable");
+            }
+            UciCommand::Stop => {
+                if let Some(control) = &control_handle {
+                    control.stop();
+                }
             }
             UciCommand::Quit => {
+                if let Some(control) = &control_handle {
+                    control.stop();
+                }
+                let _ = command_tx.send(WorkerCommand::Quit);
+                let _ = worker.join();
                 return;
             }
             UciCommand::Unkown(command) => {
                 eprintln!("Unkown Command: {}", command);
             }
+        }
+    }
+
+    if let Some(control) = &control_handle {
+        control.stop();
+    }
+    let _ = command_tx.send(WorkerCommand::Quit);
+    let _ = worker.join();
+}
+
+fn send_bestmove(result: SearchResult) {
+    match result.best_move {
+        Some(mv) => {
+            let promoted_to = match mv.kind() {
+                MoveKind::Promotion(piece) | MoveKind::PromotionCapture(piece) => Some(
+                    match piece {
+                        PieceKind::Knight => "n",
+                        PieceKind::Bishop => "b",
+                        PieceKind::Rook => "r",
+                        PieceKind::Queen => "q",
+                        _ => panic!("invalid promotion piece"),
+                    }
+                    .to_string(),
+                ),
+                _ => None,
+            };
+            let uci_move = UciMove {
+                origin: mv.origin().to_name(),
+                destination: mv.destination().to_name(),
+                promoted_to,
+            };
+            send(&uci::bestmove(uci_move));
+        }
+        None => {
+            // UCI requires a bestmove response even in terminal positions.
+            send("bestmove 0000");
         }
     }
 }

@@ -1,19 +1,16 @@
 use crate::{
     Board, CopyMakeTransition, Evaluator, Move, MoveGenerator, MoveList, NaiveMoveGenerator,
     PureNegamaxSearcher, RandomEvaluator, SearchResult, Searcher,
-    eval::material::MaterialEvaluator, move_gen::attacks::ray_is_attacked,
+    eval::material::MaterialEvaluator,
+    move_gen::attacks::ray_is_attacked,
+    search::{
+        DeepeningSearcher,
+        control::{SearchConstraint, SearchControl},
+    },
 };
 
-pub type BestEngine = Engine<
-    PureNegamaxSearcher<
-        CopyMakeTransition,
-        NaiveMoveGenerator<CopyMakeTransition>,
-        MaterialEvaluator,
-    >,
-    NaiveMoveGenerator<CopyMakeTransition>,
-    MaterialEvaluator,
->;
-pub type RandomEngine = Engine<
+// V1: CopyMakeTransition + PureNegamaxSearcher + NaiveMoveGenerator + RandomEvaluator.
+pub type V1Engine = Engine<
     PureNegamaxSearcher<
         CopyMakeTransition,
         NaiveMoveGenerator<CopyMakeTransition>,
@@ -23,31 +20,66 @@ pub type RandomEngine = Engine<
     RandomEvaluator,
 >;
 
-impl BestEngine {
-    pub fn best() -> Self {
+// V2: CopyMakeTransition + PureNegamaxSearcher + NaiveMoveGenerator + MaterialEvaluator.
+pub type V2Engine = Engine<
+    PureNegamaxSearcher<
+        CopyMakeTransition,
+        NaiveMoveGenerator<CopyMakeTransition>,
+        MaterialEvaluator,
+    >,
+    NaiveMoveGenerator<CopyMakeTransition>,
+    MaterialEvaluator,
+>;
+
+// V3: CopyMakeTransition + DeepeningSearcher(PureNegamax core) + NaiveMoveGenerator + MaterialEvaluator.
+pub type V3Engine = Engine<
+    DeepeningSearcher<
+        CopyMakeTransition,
+        NaiveMoveGenerator<CopyMakeTransition>,
+        MaterialEvaluator,
+    >,
+    NaiveMoveGenerator<CopyMakeTransition>,
+    MaterialEvaluator,
+>;
+
+impl V2Engine {
+    pub fn v2() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = MaterialEvaluator::new();
         let searcher = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             MaterialEvaluator::new(),
-            3,
             ray_is_attacked,
         );
         Engine::new(searcher, mg, evaluator)
     }
 }
-impl RandomEngine {
-    pub fn random() -> Self {
+impl V1Engine {
+    pub fn v1() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = RandomEvaluator::new();
         let searcher = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             RandomEvaluator::new(),
-            3,
             ray_is_attacked,
         );
+        Engine::new(searcher, mg, evaluator)
+    }
+}
+
+impl V3Engine {
+    pub fn v3() -> Self {
+        let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
+        let evaluator = MaterialEvaluator::new();
+        let searcher = DeepeningSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            MaterialEvaluator::new(),
+            ray_is_attacked,
+        );
+
         Engine::new(searcher, mg, evaluator)
     }
 }
@@ -77,8 +109,13 @@ where
         }
     }
 
-    pub fn search(&mut self, board: &mut Board) -> SearchResult {
-        self.searcher.start_search(board)
+    pub fn search(
+        &mut self,
+        board: &mut Board,
+        constraint: SearchConstraint,
+        control: SearchControl,
+    ) -> SearchResult {
+        self.searcher.start_search(board, constraint, &control)
     }
 
     pub fn generate_moves(&mut self, board: &mut Board) -> MoveList {
