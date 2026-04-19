@@ -5,6 +5,10 @@ use crate::{
     spec::TestSpec,
 };
 
+fn movetime_ms_to_st_seconds(movetime_ms: u64) -> String {
+    format!("{:.3}", movetime_ms as f64 / 1000.0)
+}
+
 pub fn run(test_spec: &TestSpec) {
     let baseline = test_spec.baseline();
     let candidate = test_spec.candidate().unwrap_or(baseline);
@@ -56,7 +60,7 @@ fn build_args(
 
     // Shared args
     args.push(String::from("-each"));
-    args.push(match config.constraint {
+    let time_control_arg = match config.constraint {
         Constraint::FixedDepth(_depth) => {
             format!("tc=inf")
         }
@@ -66,15 +70,19 @@ fn build_args(
         Constraint::Standard(base, increment) => {
             format!("tc={:.3}+{:.3}", base, increment)
         }
-        Constraint::FixedMoveTime(_move_time) => {
-            format!("tc=inf")
-        }
-    });
+        Constraint::FixedMoveTime(_move_time) => String::new(),
+    };
+    if !time_control_arg.is_empty() {
+        args.push(time_control_arg);
+    }
     match config.constraint {
         Constraint::FixedDepth(depth) => args.push(format!("depth={}", depth)),
         Constraint::NodeBudget(nodes) => args.push(format!("nodes={}", nodes)),
         Constraint::Standard(_, _) => {}
-        Constraint::FixedMoveTime(move_time) => args.push(format!("movetime={}", move_time)),
+        // cutechess expects fixed per-move time as st=<seconds> under -each.
+        Constraint::FixedMoveTime(move_time) => {
+            args.push(format!("st={}", movetime_ms_to_st_seconds(move_time)))
+        }
     }
 
     // Max rounds (for sprt early stopping)

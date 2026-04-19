@@ -10,17 +10,19 @@ pub use core::{
     Square,
 };
 pub use engine::Engine;
-pub use engine::{BestEngine, RandomEngine};
+pub use engine::{V1Engine, V2Engine, V3Engine};
 pub use eval::{DRAW, Evaluator, NEG_INF, POS_INF, RandomEvaluator};
 pub use move_gen::{IsAttackedFn, MoveGenerator, NaiveMoveGenerator};
+pub use search::control::{SearchConstraint, SearchControl};
 pub use search::{PureNegamaxSearcher, SearchResult, Searcher};
 pub use transition::{CopyMakeTransition, TransitionManager};
 
 pub mod prelude {
     pub use crate::{
-        BestEngine, Bitboard, Board, CastlingRights, Color, CopyMakeTransition, DRAW, Direction,
-        Engine, Evaluator, IsAttackedFn, Move, MoveGenerator, MoveKind, MoveList, NEG_INF,
-        NaiveMoveGenerator, POS_INF, Piece, PieceKind, PureNegamaxSearcher, RandomEngine,
-        RandomEvaluator, SearchResult, Searcher, Square, TransitionManager,
+        Bitboard, Board, CastlingRights, Color, CopyMakeTransition, DRAW, Direction, Engine,
+        Evaluator, IsAttackedFn, Move, MoveGenerator, MoveKind, MoveList, NEG_INF,
+        NaiveMoveGenerator, POS_INF, Piece, PieceKind, PureNegamaxSearcher, RandomEvaluator,
+        SearchConstraint, SearchControl, SearchResult, Searcher, Square, TransitionManager,
+        V1Engine, V2Engine, V3Engine,
     };
 }
