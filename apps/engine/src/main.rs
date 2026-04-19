@@ -7,7 +7,7 @@ fn main() {
         .iter()
         .find(|a| a.starts_with("--engine="))
         .map(|a| a.trim_start_matches("--engine="))
-        .unwrap_or("v2");
+        .unwrap_or("v3");
 
     match engine_kind {
         "v1" | "random" => {
