@@ -1,6 +1,7 @@
 use crate::search::control::{SearchConstraint, SearchControl};
 use crate::{Board, Move};
 
+pub mod alpha_beta;
 pub mod control;
 pub mod deepening_search;
 pub mod kernel;

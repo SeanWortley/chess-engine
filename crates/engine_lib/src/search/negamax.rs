@@ -1,20 +1,20 @@
 use crate::{
-    Board, Color, DRAW, Evaluator, IsAttackedFn, Move, MoveGenerator, MoveList, NEG_INF, PieceKind,
+    Board, Color, DRAW, IsAttackedFn, Move, MoveGenerator, MoveList, NEG_INF, POS_INF, PieceKind,
     SearchResult, Searcher, Square, TransitionManager,
-    search::control::{SearchConstraint, SearchControl},
+    search::{
+        LeafPolicy,
+        control::{SearchConstraint, SearchControl},
+        kernel::AlphaBetaKernel,
+    },
 };
-
-pub struct PureNegamaxSearcher<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> {
-    tm: TM,
-    mg: MG,
-    e: E,
-    attacked_fn: IsAttackedFn,
-}
-
 const DEFAULT_NEGAMAX_DEPTH: u8 = 4;
 
-impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> Searcher
-    for PureNegamaxSearcher<TM, MG, E>
+pub struct PureNegamaxSearcher<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> {
+    kernel: AlphaBetaKernel<TM, MG, LP>,
+}
+
+impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> Searcher
+    for PureNegamaxSearcher<TM, MG, LP>
 {
     // Root NegaMax function
     fn start_search(
@@ -24,20 +24,20 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> Searcher
         control: &SearchControl,
     ) -> SearchResult {
         let depth_limit = constraint.max_depth.unwrap_or(DEFAULT_NEGAMAX_DEPTH);
-
-        self.search_at_depth(board, depth_limit, control)
+        self.kernel
+            .search(board, NEG_INF, POS_INF, depth_limit, control)
     }
 
     fn make(&mut self, board: &mut Board, mv: Move) {
-        self.tm.make(board, mv);
+        self.kernel.make(board, mv);
     }
 
     fn unmake(&mut self, board: &mut Board, mv: Move) {
-        self.tm.unmake(board, mv);
+        self.kernel.unmake(board, mv);
     }
 }
 
-impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> PureNegamaxSearcher<TM, MG, E> {
+impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> PureNegamaxSearcher<TM, MG, E> {
     pub fn new(
         tm: TM,
         mg: MG,
