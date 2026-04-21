@@ -4,8 +4,9 @@ use crate::{
     eval::material::MaterialEvaluator,
     move_gen::attacks::ray_is_attacked,
     search::{
-        DeepeningSearcher,
+        SearchDriver,
         control::{SearchConstraint, SearchControl},
+        static_leaf::StaticLeaf,
     },
 };
 
@@ -14,7 +15,7 @@ pub type V1Engine = Engine<
     PureNegamaxSearcher<
         CopyMakeTransition,
         NaiveMoveGenerator<CopyMakeTransition>,
-        RandomEvaluator,
+        StaticLeaf<RandomEvaluator>,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     RandomEvaluator,
@@ -25,7 +26,7 @@ pub type V2Engine = Engine<
     PureNegamaxSearcher<
         CopyMakeTransition,
         NaiveMoveGenerator<CopyMakeTransition>,
-        MaterialEvaluator,
+        StaticLeaf<MaterialEvaluator>,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     MaterialEvaluator,
@@ -33,10 +34,12 @@ pub type V2Engine = Engine<
 
 // V3: CopyMakeTransition + DeepeningSearcher(PureNegamax core) + NaiveMoveGenerator + MaterialEvaluator.
 pub type V3Engine = Engine<
-    DeepeningSearcher<
-        CopyMakeTransition,
-        NaiveMoveGenerator<CopyMakeTransition>,
-        MaterialEvaluator,
+    SearchDriver<
+        PureNegamaxSearcher<
+            CopyMakeTransition,
+            NaiveMoveGenerator<CopyMakeTransition>,
+            StaticLeaf<MaterialEvaluator>,
+        >,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     MaterialEvaluator,
@@ -49,7 +52,7 @@ impl V2Engine {
         let searcher = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
-            MaterialEvaluator::new(),
+            StaticLeaf::new(MaterialEvaluator::new()),
             ray_is_attacked,
         );
         Engine::new(searcher, mg, evaluator)
@@ -62,7 +65,7 @@ impl V1Engine {
         let searcher = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
-            RandomEvaluator::new(),
+            StaticLeaf::new(RandomEvaluator::new()),
             ray_is_attacked,
         );
         Engine::new(searcher, mg, evaluator)
@@ -73,12 +76,13 @@ impl V3Engine {
     pub fn v3() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = MaterialEvaluator::new();
-        let searcher = DeepeningSearcher::new(
+        let core = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
-            MaterialEvaluator::new(),
+            StaticLeaf::new(MaterialEvaluator::new()),
             ray_is_attacked,
         );
+        let searcher = SearchDriver::iterative(core);
 
         Engine::new(searcher, mg, evaluator)
     }

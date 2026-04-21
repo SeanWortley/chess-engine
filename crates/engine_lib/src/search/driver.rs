@@ -1,22 +1,48 @@
 use crate::{
-    Board, Color, Evaluator, Move, MoveGenerator, PureNegamaxSearcher, SearchResult, Searcher,
-    Square, TransitionManager,
+    Board, Move, SearchResult,
     search::{
-        LeafPolicy,
+        SearchCore, Searcher,
         control::{SearchConstraint, SearchControl},
     },
 };
 
-pub struct DeepeningSearcher<S> {
+pub struct SearchDriver<S: SearchCore> {
     core_searcher: S,
+    mode: SearchMode,
+}
+
+pub enum SearchMode {
+    Iterative,
+    FixedDepth,
 }
 
 const DEFAULT_DEEPENING_DEPTH: u8 = 4;
 
-impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> Searcher
-    for DeepeningSearcher<TM, MG, LP>
-{
-    // Root Iterative Deeping function
+impl<S: SearchCore> SearchDriver<S> {
+    pub fn new(core_searcher: S, mode: SearchMode) -> Self {
+        Self {
+            core_searcher,
+            mode,
+        }
+    }
+
+    pub fn iterative(core_searcher: S) -> Self {
+        Self::new(core_searcher, SearchMode::Iterative)
+    }
+
+    pub fn fixed(core_searcher: S) -> Self {
+        Self::new(core_searcher, SearchMode::FixedDepth)
+    }
+
+    pub fn is_iterative(&self) -> bool {
+        match self.mode {
+            SearchMode::Iterative => true,
+            SearchMode::FixedDepth => false,
+        }
+    }
+}
+
+impl<S: SearchCore> Searcher for SearchDriver<S> {
     fn start_search(
         &mut self,
         board: &mut Board,
@@ -25,9 +51,17 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> Searcher
     ) -> SearchResult {
         let requested_depth_limit = match constraint.max_depth {
             Some(depth) => depth,
-            None if constraint.movetime.is_some() => u8::MAX,
-            None => DEFAULT_DEEPENING_DEPTH,
+            None => match self.mode {
+                SearchMode::Iterative => u8::MAX,
+                SearchMode::FixedDepth => DEFAULT_DEEPENING_DEPTH,
+            },
         };
+
+        if !(self.is_iterative()) {
+            return self
+                .core_searcher
+                .search_at_depth(board, requested_depth_limit, control);
+        }
 
         let mut best_result = SearchResult {
             best_move: None,
@@ -35,7 +69,6 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> Searcher
         };
 
         for current_depth in 1..=requested_depth_limit {
-            // holy fuck I love rust :)
             if control.should_stop() {
                 break;
             }
@@ -58,18 +91,5 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> Searcher
 
     fn unmake(&mut self, board: &mut Board, mv: Move) {
         self.core_searcher.unmake(board, mv);
-    }
-}
-
-impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> DeepeningSearcher<TM, MG, E> {
-    pub fn new(
-        tm: TM,
-        mg: MG,
-        e: E,
-        attacked_fn: fn(board: &Board, square: Square, attacking_color: Color) -> bool,
-    ) -> Self {
-        let core_searcher = PureNegamaxSearcher::new(tm, mg, e, attacked_fn);
-
-        Self { core_searcher }
     }
 }

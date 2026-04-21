@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use testing_lib::prelude::*;
 
 fn main() {
+    let opening_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/books/noomen.pgn");
     unsafe {
         env::set_var("CUTECHESS_CLI", "/usr/sbin/cutechess-cli");
     }
@@ -27,26 +28,32 @@ fn main() {
 
     // Regression Check Match config
     let constraint = Constraint::FixedMoveTime(100);
-    let openings = OpeningSource::StartPos;
+    let openings = OpeningSource::Pgn(opening_path.clone());
     let max_rounds = 5000;
-    let match_config = MatchConfig::new(constraint, openings, sprt_config, max_rounds);
+    let regression_match_config = MatchConfig::new(constraint, openings, sprt_config, max_rounds);
 
     // Validation Sprt config
     let sprt_config = SprtConfig::new(0.0, 10.0, 0.05, 0.05);
 
     // Validation Match config
     let constraint = Constraint::FixedMoveTime(500);
-    let openings = OpeningSource::StartPos;
+    let openings = OpeningSource::Pgn(opening_path);
     let max_rounds = 5000;
-    let match_config = MatchConfig::new(constraint, openings, sprt_config, max_rounds);
+    let validation_match_config = MatchConfig::new(constraint, openings, sprt_config, max_rounds);
 
     // Regression Test spec
-    let test_spec = TestSpec::match_only(baseline.clone(), candidate.clone(), match_config.clone());
+    let regression_test_spec = TestSpec::match_only(
+        baseline.clone(),
+        candidate.clone(),
+        regression_match_config.clone(),
+    );
 
     // Validation Test spec
     let mut benchmarks: Vec<BenchmarkKind> = Vec::new();
     benchmarks.push(BenchmarkKind::PerftSpeed);
-    let test_spec = TestSpec::full(baseline, candidate, benchmarks, match_config);
+    let validation_test_spec =
+        TestSpec::full(baseline, candidate, benchmarks, validation_match_config);
 
-    run(&test_spec);
+    run(&regression_test_spec);
+    run(&validation_test_spec);
 }
