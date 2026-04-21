@@ -143,4 +143,12 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> AlphaBetaKernel<T
 
         best_score
     }
+
+    pub fn make(&mut self, board: &mut Board, mv: Move) {
+        self.tm.make(board, mv);
+    }
+
+    pub fn unmake(&mut self, board: &mut Board, mv: Move) {
+        self.tm.unmake(board, mv);
+    }
 }

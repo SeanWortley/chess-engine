@@ -24,7 +24,7 @@ pub trait Searcher {
     fn start_search(
         &mut self,
         board: &mut Board,
-        constraint: SearchConstraint,
+        depth: u8,
         control: &SearchControl,
     ) -> SearchResult;
 

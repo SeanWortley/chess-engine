@@ -22,16 +22,28 @@ fn main() {
     candidate_args.push("--engine=v3".to_string());
     let candidate = EngineConfig::new(String::from("candidate"), candidate_path, candidate_args);
 
-    // Sprt config
-    let sprt_config = SprtConfig::new(0.0, 5.0, 0.05, 0.05);
+    // Regression Check Sprt config
+    let sprt_config = SprtConfig::new(-10.0, 0.0, 0.05, 0.05);
 
-    // Match config
+    // Regression Check Match config
+    let constraint = Constraint::FixedMoveTime(100);
+    let openings = OpeningSource::StartPos;
+    let max_rounds = 5000;
+    let match_config = MatchConfig::new(constraint, openings, sprt_config, max_rounds);
+
+    // Validation Sprt config
+    let sprt_config = SprtConfig::new(0.0, 10.0, 0.05, 0.05);
+
+    // Validation Match config
     let constraint = Constraint::FixedMoveTime(500);
     let openings = OpeningSource::StartPos;
     let max_rounds = 5000;
     let match_config = MatchConfig::new(constraint, openings, sprt_config, max_rounds);
 
-    // Test spec
+    // Regression Test spec
+    let test_spec = TestSpec::match_only(baseline.clone(), candidate.clone(), match_config.clone());
+
+    // Validation Test spec
     let mut benchmarks: Vec<BenchmarkKind> = Vec::new();
     benchmarks.push(BenchmarkKind::PerftSpeed);
     let test_spec = TestSpec::full(baseline, candidate, benchmarks, match_config);

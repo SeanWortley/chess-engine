@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+#[derive(Clone)]
 pub struct EngineConfig {
     pub name: String,
     pub binary_path: PathBuf,
@@ -32,6 +33,7 @@ impl EngineConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct MatchConfig {
     pub constraint: Constraint,
     pub openings: OpeningSource,
@@ -39,6 +41,7 @@ pub struct MatchConfig {
     pub max_rounds: u16,
 }
 
+#[derive(Clone)]
 pub enum Constraint {
     FixedDepth(u8),
     NodeBudget(u64),
@@ -46,6 +49,7 @@ pub enum Constraint {
     FixedMoveTime(u64),
 }
 
+#[derive(Clone)]
 pub enum OpeningSource {
     StartPos,
     Epd(PathBuf),
@@ -68,6 +72,7 @@ impl MatchConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct SprtConfig {
     pub elo0: f64,
     pub elo1: f64,

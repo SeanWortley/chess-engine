@@ -1,17 +1,20 @@
 use crate::{
     Board, Color, Evaluator, Move, MoveGenerator, PureNegamaxSearcher, SearchResult, Searcher,
     Square, TransitionManager,
-    search::control::{SearchConstraint, SearchControl},
+    search::{
+        LeafPolicy,
+        control::{SearchConstraint, SearchControl},
+    },
 };
 
-pub struct DeepeningSearcher<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> {
-    core_searcher: PureNegamaxSearcher<TM, MG, E>,
+pub struct DeepeningSearcher<S> {
+    core_searcher: S,
 }
 
 const DEFAULT_DEEPENING_DEPTH: u8 = 4;
 
-impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator> Searcher
-    for DeepeningSearcher<TM, MG, E>
+impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> Searcher
+    for DeepeningSearcher<TM, MG, LP>
 {
     // Root Iterative Deeping function
     fn start_search(
