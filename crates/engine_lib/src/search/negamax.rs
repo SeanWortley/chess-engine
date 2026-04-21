@@ -1,16 +1,15 @@
 use crate::{
-    Board, Color, Move, MoveGenerator, NEG_INF, POS_INF, SearchResult, Searcher, Square,
-    TransitionManager,
+    Board, Color, Move, MoveGenerator, SearchResult, Searcher, Square, TransitionManager,
     search::{
         LeafPolicy, SearchCore,
         control::{SearchConstraint, SearchControl},
-        kernel::AlphaBetaKernel,
+        kernel::PureNegamaxKernel,
     },
 };
 const DEFAULT_NEGAMAX_DEPTH: u8 = 4;
 
 pub struct PureNegamaxSearcher<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> {
-    kernel: AlphaBetaKernel<TM, MG, LP>,
+    kernel: PureNegamaxKernel<TM, MG, LP>,
 }
 
 impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> SearchCore
@@ -22,7 +21,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> SearchCore
         depth: u8,
         control: &SearchControl,
     ) -> SearchResult {
-        self.kernel.search(board, NEG_INF, POS_INF, depth, control)
+        self.kernel.search(board, depth, control)
     }
 
     fn make(&mut self, board: &mut Board, mv: Move) {
@@ -63,7 +62,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> PureNegamaxSearch
         lp: LP,
         attacked_fn: fn(board: &Board, square: Square, attacking_color: Color) -> bool,
     ) -> Self {
-        let kernel = AlphaBetaKernel::new(tm, mg, lp, attacked_fn);
+        let kernel = PureNegamaxKernel::new(tm, mg, lp, attacked_fn);
 
         Self { kernel }
     }
