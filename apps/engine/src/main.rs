@@ -1,4 +1,4 @@
-use engine_lib::prelude::*;
+use engine_lib::{engine::V4Engine, prelude::*};
 mod uci_loop;
 
 fn main() {
@@ -7,7 +7,7 @@ fn main() {
         .iter()
         .find(|a| a.starts_with("--engine="))
         .map(|a| a.trim_start_matches("--engine="))
-        .unwrap_or("v3");
+        .unwrap_or("v4");
 
     match engine_kind {
         "v1" | "random" => {
@@ -18,6 +18,9 @@ fn main() {
         }
         "v3" | "deepening" => {
             uci_loop::run(V3Engine::v3());
+        }
+        "v4" | "ab" => {
+            uci_loop::run(V4Engine::v4());
         }
         _ => {
             panic!("Preset not found");
