@@ -107,6 +107,12 @@ fn build_args(
             args.push(String::from("plies=8"));
         }
     }
+
+    if !matches!(config.openings, OpeningSource::StartPos) {
+        args.push(String::from("-games"));
+        args.push(String::from("2"));
+    }
+
     args.push(String::from("-repeat"));
 
     // Output

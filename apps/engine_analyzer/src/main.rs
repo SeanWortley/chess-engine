@@ -4,7 +4,8 @@ use std::path::PathBuf;
 use testing_lib::prelude::*;
 
 fn main() {
-    let opening_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/books/noomen.pgn");
+    let opening_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../resources/books/noomen.pgn");
     unsafe {
         env::set_var("CUTECHESS_CLI", "/usr/sbin/cutechess-cli");
     }
@@ -13,14 +14,14 @@ fn main() {
     let mut baseline_path = PathBuf::new();
     baseline_path.push("target/release/engine");
     let mut baseline_args: Vec<String> = Vec::new();
-    baseline_args.push("--engine=v2".to_string());
+    baseline_args.push("--engine=v3".to_string());
     let baseline = EngineConfig::new(String::from("baseline"), baseline_path, baseline_args);
 
     // Candidate config
     let mut candidate_path = PathBuf::new();
     candidate_path.push("target/release/engine");
     let mut candidate_args: Vec<String> = Vec::new();
-    candidate_args.push("--engine=v3".to_string());
+    candidate_args.push("--engine=v4".to_string());
     let candidate = EngineConfig::new(String::from("candidate"), candidate_path, candidate_args);
 
     // Regression Check Sprt config
