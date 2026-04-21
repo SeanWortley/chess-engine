@@ -17,9 +17,9 @@ pub fn run(test_spec: &TestSpec) {
         }
         TestMode::Full => {
             let bench_results = benchmark_runner::run_comparison(test_spec);
-            match_runner::run(test_spec);
             let benchmark_analysis = benchmark_analyzer::analyze_comparison_results(bench_results);
             report::print_report(benchmark_analysis);
+            match_runner::run(test_spec);
         }
     }
 }
