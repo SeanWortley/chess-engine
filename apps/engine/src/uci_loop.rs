@@ -8,6 +8,37 @@ use uci::{UciCommand, parse_command, types::UciMove};
 const ID_NAME: &str = "PankBot";
 const ID_AUTHOR: &str = "Pank";
 
+use engine_lib::search::SearchReporter;
+
+struct UciReporter;
+
+impl SearchReporter for UciReporter {
+    fn report_depth(
+        &self,
+        depth: u8,
+        nodes: u64,
+        time_ms: u128,
+        score: i16,
+        best_move: Option<Move>,
+    ) {
+        // Build the move portion
+        let move_str = match best_move {
+            Some(mv) => format!(
+                " currmove {}{}",
+                mv.origin().to_name(),
+                mv.destination().to_name()
+            ),
+            None => String::new(),
+        };
+
+        // Send it :)
+        send(&format!(
+            "info depth {} nodes {} time {} score cp {}{}",
+            depth, nodes, time_ms, score, move_str
+        ));
+    }
+}
+
 enum WorkerCommand {
     Search {
         board: Board,
@@ -34,7 +65,8 @@ where
                 constraint,
                 control,
             } => {
-                let result = engine.search(&mut board, constraint, control);
+                let reporter = UciReporter;
+                let result = engine.search(&mut board, constraint, control, &reporter);
                 send_bestmove(result);
             }
             WorkerCommand::Perft { mut board, depth } => {

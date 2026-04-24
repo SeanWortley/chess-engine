@@ -1,6 +1,5 @@
 use engine_lib::{engine::V4Engine, prelude::*};
 mod uci_loop;
-mod uci_reporter;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
