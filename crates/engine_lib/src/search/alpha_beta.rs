@@ -1,6 +1,10 @@
 use crate::{
-    Board, Color, Move, MoveGenerator, NEG_INF, POS_INF, SearchResult, Square, TransitionManager,
-    search::{LeafPolicy, SearchCore, control::SearchControl, kernel::AlphaBetaKernel},
+    Board, Color, Move, MoveGenerator, MoveList, NEG_INF, POS_INF, SearchResult, Square,
+    TransitionManager,
+    search::{
+        LeafPolicy, SearchCore, control::SearchControl, kernel::AlphaBetaKernel,
+        metrics::SearchMetrics,
+    },
 };
 
 pub struct AlphaBetaSearcher<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> {
@@ -15,8 +19,60 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> SearchCore
         board: &mut Board,
         depth: u8,
         control: &SearchControl,
+        metrics: &mut SearchMetrics,
     ) -> SearchResult {
-        self.kernel.search(board, NEG_INF, POS_INF, depth, control)
+        metrics.increment();
+
+        let mut moves = MoveList::new();
+        self.kernel.generate_moves(board, &mut moves);
+
+        if moves.is_empty() {
+            return SearchResult {
+                best_move: None,
+                score: self.kernel.terminal_score_if_no_moves(board),
+            };
+        }
+
+        let mut alpha = NEG_INF;
+        let beta = POS_INF;
+        let mut best_score = i16::MIN;
+        let mut best_move: Option<Move> = None;
+
+        for mv in moves.iter() {
+            if control.should_stop(metrics) {
+                break;
+            }
+
+            self.kernel.make(board, *mv);
+            let score = self
+                .kernel
+                .alpha_beta(
+                    board,
+                    -beta,
+                    -alpha,
+                    depth.saturating_sub(1),
+                    control,
+                    metrics,
+                )
+                .saturating_neg();
+            self.kernel.unmake(board, *mv);
+
+            if score > best_score {
+                best_score = score;
+                best_move = Some(*mv);
+            }
+            if score > alpha {
+                alpha = score;
+            }
+            if score >= beta {
+                break;
+            }
+        }
+
+        SearchResult {
+            best_move,
+            score: best_score,
+        }
     }
 
     fn make(&mut self, board: &mut Board, mv: Move) {

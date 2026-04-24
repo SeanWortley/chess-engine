@@ -183,7 +183,6 @@ where
                     board.apply(mv);
                 }
             }
-            //Implement depth & movetime later
             UciCommand::Go {
                 depth,
                 movetime,

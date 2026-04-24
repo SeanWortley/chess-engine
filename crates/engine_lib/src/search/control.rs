@@ -6,10 +6,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+use crate::search::metrics::SearchMetrics;
+
 #[derive(Clone, Copy)]
 pub struct SearchConstraint {
     pub max_depth: Option<u8>,
     pub movetime: Option<Duration>,
+    pub node_budget: Option<u64>,
 }
 
 impl SearchConstraint {
@@ -17,6 +20,7 @@ impl SearchConstraint {
         SearchConstraint {
             max_depth: Some(depth),
             movetime: None,
+            node_budget: None,
         }
     }
 
@@ -24,6 +28,15 @@ impl SearchConstraint {
         SearchConstraint {
             max_depth: None,
             movetime: Some(movetime),
+            node_budget: None,
+        }
+    }
+
+    pub fn node_budget(node_budget: u64) -> Self {
+        SearchConstraint {
+            max_depth: None,
+            movetime: None,
+            node_budget: Some(node_budget),
         }
     }
 }
@@ -33,6 +46,7 @@ pub struct SearchControl {
     should_stop: Arc<AtomicBool>,
     start_time: Instant,
     deadline: Option<Instant>,
+    node_budget: Option<u64>,
 }
 
 impl SearchControl {
@@ -45,13 +59,24 @@ impl SearchControl {
             should_stop: Arc::new(AtomicBool::new(false)),
             start_time,
             deadline,
+            node_budget: constraint.node_budget,
         }
     }
 
-    pub fn should_stop(&self) -> bool {
-        if self.should_stop.load(Ordering::Relaxed) == true {
+    pub fn should_stop(&self, metrics: &SearchMetrics) -> bool {
+        // First check flag
+        if self.should_stop.load(Ordering::Relaxed) {
             return true;
         }
+
+        // Then check nodes
+        if let Some(budget) = self.node_budget {
+            if metrics.total() >= budget {
+                return true;
+            }
+        }
+
+        // Then check deadline
         match self.deadline {
             Some(deadline) => {
                 return Instant::now() >= deadline;

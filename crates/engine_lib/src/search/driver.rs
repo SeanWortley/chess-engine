@@ -1,8 +1,9 @@
 use crate::{
     Board, Move, SearchResult,
     search::{
-        SearchCore, Searcher,
+        SearchCore, SearchReporter, Searcher,
         control::{SearchConstraint, SearchControl},
+        metrics::SearchMetrics,
     },
 };
 
@@ -48,7 +49,10 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
         board: &mut Board,
         constraint: SearchConstraint,
         control: &SearchControl,
+        reporter: &dyn SearchReporter,
     ) -> SearchResult {
+        let mut metrics = SearchMetrics::new();
+
         let requested_depth_limit = match constraint.max_depth {
             Some(depth) => depth,
             None => match self.mode {
@@ -57,29 +61,52 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
             },
         };
 
+        // For just one depth
         if !(self.is_iterative()) {
-            return self
-                .core_searcher
-                .search_at_depth(board, requested_depth_limit, control);
+            let result = self.core_searcher.search_at_depth(
+                board,
+                requested_depth_limit,
+                control,
+                &mut metrics,
+            );
+
+            reporter.report_depth(
+                requested_depth_limit,
+                metrics.total(),
+                control.elapsed().as_millis(),
+                result.score,
+                result.best_move,
+            );
+
+            return result;
         }
 
+        // Prepare for iteration
         let mut best_result = SearchResult {
             best_move: None,
             score: i16::MIN,
         };
 
         for current_depth in 1..=requested_depth_limit {
-            if control.should_stop() {
+            if control.should_stop(&mut metrics) {
                 break;
             }
 
-            let new_result = self
-                .core_searcher
-                .search_at_depth(board, current_depth, control);
+            let new_result =
+                self.core_searcher
+                    .search_at_depth(board, current_depth, control, &mut metrics);
 
-            if !control.should_stop() {
+            if !control.should_stop(&mut metrics) {
                 best_result = new_result;
             }
+
+            reporter.report_depth(
+                current_depth,
+                metrics.total(),
+                control.elapsed().as_millis(),
+                best_result.score,
+                best_result.best_move,
+            );
         }
 
         best_result

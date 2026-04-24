@@ -1,15 +1,28 @@
 use crate::search::control::{SearchConstraint, SearchControl};
+use crate::search::metrics::SearchMetrics;
 use crate::{Board, Move};
 
 pub mod alpha_beta;
 pub mod control;
 pub mod driver;
 pub mod kernel;
+pub mod metrics;
 pub mod negamax;
 pub mod static_leaf;
 
 pub use driver::SearchDriver;
 pub use negamax::PureNegamaxSearcher;
+
+pub trait SearchReporter {
+    fn report_depth(
+        &self,
+        depth: u8,
+        nodes: u64,
+        time_ms: u128,
+        score: i16,
+        best_move: Option<Move>,
+    );
+}
 
 #[derive(Clone, Copy)]
 pub struct EndGameFlag {}
@@ -17,7 +30,6 @@ pub struct EndGameFlag {}
 pub struct SearchResult {
     pub best_move: Option<Move>,
     pub score: i16,
-    //pub nodes: u64,
 }
 
 pub trait Searcher {
@@ -26,6 +38,7 @@ pub trait Searcher {
         board: &mut Board,
         constraint: SearchConstraint,
         control: &SearchControl,
+        reporter: &dyn SearchReporter,
     ) -> SearchResult;
 
     // Passed up from transition manager, so engine can use them directly :)
@@ -39,6 +52,7 @@ pub trait SearchCore {
         board: &mut Board,
         depth: u8,
         control: &SearchControl,
+        metrics: &mut SearchMetrics,
     ) -> SearchResult;
 
     // Passed up from transition manager, so engine can use them directly :)
