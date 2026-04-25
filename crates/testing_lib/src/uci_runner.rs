@@ -94,7 +94,7 @@ pub fn run_perft_case(engine_config: &EngineConfig, fen: &str, depth: u8) -> (u6
     (nodes, time_ms as u64)
 }
 
-pub fn run_nodes_evaluated_case(engine_config: &EngineConfig, fen: &str, depth: u8) -> u64 {
+pub fn run_node_count_case(engine_config: &EngineConfig, fen: &str, depth: u8) -> u64 {
     let child = launch_child_from_config(engine_config);
     let mut session = UciSession::from_child(child);
 

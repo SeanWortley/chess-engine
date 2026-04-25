@@ -1,6 +1,6 @@
 pub mod analysis;
 pub mod benchmarks;
-pub mod nodes_evaluated;
+pub mod node_count;
 pub mod perft;
 pub mod positions;
 pub mod runner;

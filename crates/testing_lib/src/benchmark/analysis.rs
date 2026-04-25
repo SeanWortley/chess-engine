@@ -18,6 +18,16 @@ pub enum ComparisonStatus {
     Unchanged,
 }
 
+impl ComparisonStatus {
+    pub fn status(&self) -> &str {
+        match self {
+            Self::Improved => "Improved",
+            Self::Regressed => "Regressed",
+            Self::Unchanged => "Unchanged",
+        }
+    }
+}
+
 pub fn analyze_comparison_results(
     results: Vec<BenchmarkComparisonResult>,
 ) -> Vec<BenchmarkAnalysisRow> {
@@ -52,6 +62,37 @@ pub fn analyze_comparison_results(
                         kind: BenchmarkKind::PerftSpeed,
                         baseline_value: baseline_nps,
                         candidate_value: candidate_nps,
+                        delta,
+                        delta_percentage,
+                        status,
+                    };
+                    rows.push(row);
+                }
+                _ => {}
+            },
+            BenchmarkResult::NodesEvaluated {
+                nodes: baseline_nodes,
+            } => match result.candidate {
+                BenchmarkResult::NodesEvaluated {
+                    nodes: candidate_nodes,
+                } => {
+                    let delta = candidate_nodes as i64 - baseline_nodes as i64;
+                    let delta_percentage = (delta as f64 * 100.0) / baseline_nodes as f64;
+
+                    let status = {
+                        if delta_percentage > 5 as f64 {
+                            ComparisonStatus::Regressed
+                        } else if delta_percentage < -5 as f64 {
+                            ComparisonStatus::Improved
+                        } else {
+                            ComparisonStatus::Unchanged
+                        }
+                    };
+
+                    let row = BenchmarkAnalysisRow {
+                        kind: BenchmarkKind::NodeCount,
+                        baseline_value: baseline_nodes,
+                        candidate_value: candidate_nodes,
                         delta,
                         delta_percentage,
                         status,
