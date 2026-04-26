@@ -2,7 +2,7 @@ use crate::BenchmarkResult;
 
 pub enum BenchmarkKind {
     PerftSpeed,
-    NodesEvaluated,
+    NodeCount,
     MovesPerSecond,
 }
 

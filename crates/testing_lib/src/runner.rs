@@ -10,7 +10,9 @@ pub fn run(test_spec: &TestSpec) {
             let _result = benchmark_runner::run_solo(test_spec);
         }
         TestMode::BenchmarkComparison => {
-            let _result = benchmark_runner::run_comparison(test_spec);
+            let results = benchmark_runner::run_comparison(test_spec);
+            let analysis = benchmark_analyzer::analyze_comparison_results(results);
+            report::print_report(analysis);
         }
         TestMode::Match => {
             match_runner::run(test_spec);

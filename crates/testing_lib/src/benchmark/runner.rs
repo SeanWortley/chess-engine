@@ -1,5 +1,7 @@
 use crate::{
-    BenchmarkKind, BenchmarkResult, TestSpec, benchmark::perft, results::BenchmarkComparisonResult,
+    BenchmarkKind, BenchmarkResult, TestSpec,
+    benchmark::{node_count, perft},
+    results::BenchmarkComparisonResult,
 };
 
 pub fn run_solo(test_spec: &TestSpec) -> Vec<BenchmarkResult> {
@@ -23,6 +25,15 @@ pub fn run_comparison(test_spec: &TestSpec) -> Vec<BenchmarkComparisonResult> {
             BenchmarkKind::PerftSpeed => {
                 let baseline_result = perft::perft_speed_test(test_spec.baseline());
                 let candidate_result = perft::perft_speed_test(test_spec.candidate().unwrap());
+
+                results.push(BenchmarkComparisonResult {
+                    baseline: baseline_result,
+                    candidate: candidate_result,
+                });
+            }
+            BenchmarkKind::NodeCount => {
+                let baseline_result = node_count::node_count(test_spec.baseline());
+                let candidate_result = node_count::node_count(test_spec.candidate().unwrap());
 
                 results.push(BenchmarkComparisonResult {
                     baseline: baseline_result,

@@ -4,7 +4,7 @@ use crate::{
     eval::material::MaterialEvaluator,
     move_gen::attacks::ray_is_attacked,
     search::{
-        SearchDriver,
+        SearchDriver, SearchReporter,
         alpha_beta::AlphaBetaSearcher,
         control::{SearchConstraint, SearchControl},
         static_leaf::StaticLeaf,
@@ -13,10 +13,12 @@ use crate::{
 
 // V1: CopyMakeTransition + PureNegamaxSearcher + NaiveMoveGenerator + RandomEvaluator.
 pub type V1Engine = Engine<
-    PureNegamaxSearcher<
-        CopyMakeTransition,
-        NaiveMoveGenerator<CopyMakeTransition>,
-        StaticLeaf<RandomEvaluator>,
+    SearchDriver<
+        PureNegamaxSearcher<
+            CopyMakeTransition,
+            NaiveMoveGenerator<CopyMakeTransition>,
+            StaticLeaf<RandomEvaluator>,
+        >,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     RandomEvaluator,
@@ -24,10 +26,12 @@ pub type V1Engine = Engine<
 
 // V2: CopyMakeTransition + PureNegamaxSearcher + NaiveMoveGenerator + MaterialEvaluator.
 pub type V2Engine = Engine<
-    PureNegamaxSearcher<
-        CopyMakeTransition,
-        NaiveMoveGenerator<CopyMakeTransition>,
-        StaticLeaf<MaterialEvaluator>,
+    SearchDriver<
+        PureNegamaxSearcher<
+            CopyMakeTransition,
+            NaiveMoveGenerator<CopyMakeTransition>,
+            StaticLeaf<MaterialEvaluator>,
+        >,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     MaterialEvaluator,
@@ -63,12 +67,13 @@ impl V2Engine {
     pub fn v2() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = MaterialEvaluator::new();
-        let searcher = PureNegamaxSearcher::new(
+        let core = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             StaticLeaf::new(MaterialEvaluator::new()),
             ray_is_attacked,
         );
+        let searcher = SearchDriver::fixed(core);
         Engine::new(searcher, mg, evaluator)
     }
 }
@@ -76,12 +81,13 @@ impl V1Engine {
     pub fn v1() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = RandomEvaluator::new();
-        let searcher = PureNegamaxSearcher::new(
+        let core = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             StaticLeaf::new(RandomEvaluator::new()),
             ray_is_attacked,
         );
+        let searcher = SearchDriver::fixed(core);
         Engine::new(searcher, mg, evaluator)
     }
 }
@@ -148,8 +154,10 @@ where
         board: &mut Board,
         constraint: SearchConstraint,
         control: SearchControl,
+        reporter: &dyn SearchReporter,
     ) -> SearchResult {
-        self.searcher.start_search(board, constraint, &control)
+        self.searcher
+            .start_search(board, constraint, &control, reporter)
     }
 
     pub fn generate_moves(&mut self, board: &mut Board) -> MoveList {
