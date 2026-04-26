@@ -52,9 +52,20 @@ fn main() {
     // Validation Test spec
     let mut benchmarks: Vec<BenchmarkKind> = Vec::new();
     benchmarks.push(BenchmarkKind::PerftSpeed);
-    let validation_test_spec =
-        TestSpec::full(baseline, candidate, benchmarks, validation_match_config);
+    benchmarks.push(BenchmarkKind::NodeCount);
+    let validation_test_spec = TestSpec::full(
+        baseline.clone(),
+        candidate.clone(),
+        benchmarks,
+        validation_match_config,
+    );
 
+    let mut benchmarks: Vec<BenchmarkKind> = Vec::new();
+    benchmarks.push(BenchmarkKind::PerftSpeed);
+    benchmarks.push(BenchmarkKind::NodeCount);
+    let bench_only_spec = TestSpec::benchmark_comparison(baseline, candidate, benchmarks);
+
+    run(&bench_only_spec);
     run(&regression_test_spec);
     run(&validation_test_spec);
 }

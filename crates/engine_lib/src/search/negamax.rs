@@ -1,12 +1,10 @@
 use crate::{
-    Board, Color, Move, MoveGenerator, SearchResult, Searcher, Square, TransitionManager,
+    Board, Color, Move, MoveGenerator, MoveList, SearchResult, Square, TransitionManager,
     search::{
-        LeafPolicy, SearchCore,
-        control::{SearchConstraint, SearchControl},
-        kernel::PureNegamaxKernel,
+        LeafPolicy, SearchCore, control::SearchControl, kernel::PureNegamaxKernel,
+        metrics::SearchMetrics,
     },
 };
-const DEFAULT_NEGAMAX_DEPTH: u8 = 4;
 
 pub struct PureNegamaxSearcher<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> {
     kernel: PureNegamaxKernel<TM, MG, LP>,
@@ -20,30 +18,45 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> SearchCore
         board: &mut Board,
         depth: u8,
         control: &SearchControl,
+        metrics: &mut SearchMetrics,
     ) -> SearchResult {
-        self.kernel.search(board, depth, control)
-    }
+        metrics.increment();
 
-    fn make(&mut self, board: &mut Board, mv: Move) {
-        self.kernel.make(board, mv);
-    }
+        let mut moves = MoveList::new();
+        self.kernel.generate_moves(board, &mut moves);
 
-    fn unmake(&mut self, board: &mut Board, mv: Move) {
-        self.kernel.unmake(board, mv);
-    }
-}
+        if moves.is_empty() {
+            return SearchResult {
+                best_move: None,
+                score: self.kernel.terminal_score_if_no_moves(board),
+            };
+        }
 
-impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> Searcher
-    for PureNegamaxSearcher<TM, MG, LP>
-{
-    fn start_search(
-        &mut self,
-        board: &mut Board,
-        constraint: SearchConstraint,
-        control: &SearchControl,
-    ) -> SearchResult {
-        let depth = constraint.max_depth.unwrap_or(DEFAULT_NEGAMAX_DEPTH);
-        self.search_at_depth(board, depth, control)
+        let mut best_score = i16::MIN;
+        let mut best_move: Option<Move> = None;
+
+        for mv in moves.iter() {
+            if control.should_stop(metrics) {
+                break;
+            }
+
+            self.kernel.make(board, *mv);
+            let score = self
+                .kernel
+                .negamax(board, depth.saturating_sub(1), control, metrics)
+                .saturating_neg();
+            self.kernel.unmake(board, *mv);
+
+            if score > best_score {
+                best_score = score;
+                best_move = Some(*mv);
+            }
+        }
+
+        SearchResult {
+            best_move,
+            score: best_score,
+        }
     }
 
     fn make(&mut self, board: &mut Board, mv: Move) {

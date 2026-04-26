@@ -37,6 +37,7 @@ pub enum BenchmarkResult {
     },
     NodesEvaluated {
         nodes: u64,
+        time_ms: u64,
     },
     MovesPerSecond {
         moves_per_second: u64,

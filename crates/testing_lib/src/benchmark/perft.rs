@@ -1,8 +1,5 @@
-use crate::{BenchmarkResult, EngineConfig, uci_runner};
+use crate::{BenchmarkResult, EngineConfig, benchmark::positions, uci_runner};
 
-const STARTPOS: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const KIWIPETE: &str = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
-const TALKCHESS_BUG_FINDER: &str = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
 const TOTAL_CASES: u8 = 11;
 
 pub fn perft_speed_test(engine: &EngineConfig) -> BenchmarkResult {
@@ -38,7 +35,7 @@ fn startpos(engine: &EngineConfig) -> (u64, u64) {
     for i in 1..5 {
         let case_no = i;
 
-        let result = uci_runner::run_perft_case(engine, STARTPOS, i);
+        let result = uci_runner::run_perft_case(engine, positions::STARTPOS, i);
         nodes_time_sum.0 += result.0;
         nodes_time_sum.1 += result.1;
 
@@ -55,7 +52,7 @@ fn kiwipete(engine: &EngineConfig) -> (u64, u64) {
     for i in 1..=4 {
         let case_no = 4 + i;
 
-        let result = uci_runner::run_perft_case(engine, KIWIPETE, i);
+        let result = uci_runner::run_perft_case(engine, positions::KIWIPETE, i);
         nodes_time_sum.0 += result.0;
         nodes_time_sum.1 += result.1;
 
@@ -72,7 +69,7 @@ fn talkchess_bug_finder(engine: &EngineConfig) -> (u64, u64) {
     for i in 1..=4 {
         let case_no = 7 + i;
 
-        let result = uci_runner::run_perft_case(engine, TALKCHESS_BUG_FINDER, i);
+        let result = uci_runner::run_perft_case(engine, positions::TALKCHESS_BUG_FINDER, i);
         nodes_time_sum.0 += result.0;
         nodes_time_sum.1 += result.1;
 
