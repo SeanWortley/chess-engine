@@ -63,9 +63,9 @@ fn main() {
     let mut benchmarks: Vec<BenchmarkKind> = Vec::new();
     benchmarks.push(BenchmarkKind::PerftSpeed);
     benchmarks.push(BenchmarkKind::NodeCount);
-    let bench_only_spec = TestSpec::benchmark_comparison(baseline, candidate, benchmarks);
+    let _bench_only_spec = TestSpec::benchmark_comparison(baseline, candidate, benchmarks);
 
-    run(&bench_only_spec);
+    //run(&bench_only_spec);
     run(&regression_test_spec);
     run(&validation_test_spec);
 }

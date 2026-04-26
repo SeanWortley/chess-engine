@@ -47,4 +47,5 @@ pub fn print_report(analysis: Vec<BenchmarkAnalysisRow>) {
             BenchmarkKind::MovesPerSecond => {}
         }
     }
+    println!("=============================");
 }
