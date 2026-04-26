@@ -94,7 +94,7 @@ pub fn run_perft_case(engine_config: &EngineConfig, fen: &str, depth: u8) -> (u6
     (nodes, time_ms as u64)
 }
 
-pub fn run_node_count_case(engine_config: &EngineConfig, fen: &str, depth: u8) -> u64 {
+pub fn run_node_count_case(engine_config: &EngineConfig, fen: &str, depth: u8) -> (u64, u64) {
     let child = launch_child_from_config(engine_config);
     let mut session = UciSession::from_child(child);
 
@@ -106,14 +106,21 @@ pub fn run_node_count_case(engine_config: &EngineConfig, fen: &str, depth: u8) -
     session.shutdown();
 
     let line = lines.get(lines.len() - 1).expect("Failed to get last line");
-    let nodes = parse_nodes(line);
-    nodes.unwrap()
+    let nodes = parse_nodes(line).unwrap();
+    let time = parse_time(line).unwrap();
+    (nodes, time)
 }
 
 fn parse_nodes(line: &str) -> Option<u64> {
     let tokens: Vec<&str> = line.split_whitespace().collect();
     let nodes_idx = tokens.iter().position(|&t| t == "nodes")?;
     tokens.get(nodes_idx + 1)?.parse().ok()
+}
+
+fn parse_time(line: &str) -> Option<u64> {
+    let tokens: Vec<&str> = line.split_whitespace().collect();
+    let time_idx = tokens.iter().position(|&t| t == "time")?;
+    tokens.get(time_idx + 1)?.parse().ok()
 }
 
 fn launch_child_from_config(engine: &EngineConfig) -> Child {
