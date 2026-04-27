@@ -67,5 +67,5 @@ pub trait LeafPolicy {
 }
 
 pub trait OrderingPolicy {
-    fn order_moves(&mut self, board: &mut Board, moves: MoveList) -> MoveList;
+    fn order_moves(&mut self, board: &mut Board, moves: &mut MoveList);
 }

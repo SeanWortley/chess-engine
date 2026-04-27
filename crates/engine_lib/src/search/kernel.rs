@@ -85,6 +85,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
         let mut moves = MoveList::new();
         self.generate_moves(board, &mut moves);
+        self.op.order_moves(board, &mut moves);
 
         let mut alpha = alpha;
         let mut best_score = i16::MIN;
@@ -170,6 +171,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
         let mut moves = MoveList::new();
         self.generate_moves(board, &mut moves);
+        self.op.order_moves(board, &mut moves);
 
         let mut best_score = i16::MIN;
 
