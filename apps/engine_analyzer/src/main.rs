@@ -12,17 +12,15 @@ fn main() {
 
     // Baseline config
     let mut baseline_path = PathBuf::new();
-    baseline_path.push("target/release/engine");
-    let mut baseline_args: Vec<String> = Vec::new();
-    baseline_args.push("--engine=v3".to_string());
-    let baseline = EngineConfig::new(String::from("baseline"), baseline_path, baseline_args);
+    baseline_path.push(".engine_archive/linux/v5.0-PestoEval");
+    let baseline_args: Vec<String> = Vec::new();
+    let baseline = EngineConfig::new(String::from("v5.0"), baseline_path, baseline_args);
 
     // Candidate config
     let mut candidate_path = PathBuf::new();
     candidate_path.push("target/release/engine");
-    let mut candidate_args: Vec<String> = Vec::new();
-    candidate_args.push("--engine=v4".to_string());
-    let candidate = EngineConfig::new(String::from("candidate"), candidate_path, candidate_args);
+    let candidate_args: Vec<String> = Vec::new();
+    let candidate = EngineConfig::new(String::from("v6.0"), candidate_path, candidate_args);
 
     // Regression Check Sprt config
     let sprt_config = SprtConfig::new(-10.0, 0.0, 0.05, 0.05);
@@ -63,9 +61,9 @@ fn main() {
     let mut benchmarks: Vec<BenchmarkKind> = Vec::new();
     benchmarks.push(BenchmarkKind::PerftSpeed);
     benchmarks.push(BenchmarkKind::NodeCount);
-    let bench_only_spec = TestSpec::benchmark_comparison(baseline, candidate, benchmarks);
+    let _bench_only_spec = TestSpec::benchmark_comparison(baseline, candidate, benchmarks);
 
-    run(&bench_only_spec);
+    //run(&bench_only_spec);
     run(&regression_test_spec);
     run(&validation_test_spec);
 }

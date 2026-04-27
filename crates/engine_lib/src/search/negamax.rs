@@ -1,17 +1,22 @@
 use crate::{
     Board, Color, Move, MoveGenerator, MoveList, SearchResult, Square, TransitionManager,
     search::{
-        LeafPolicy, SearchCore, control::SearchControl, kernel::PureNegamaxKernel,
+        LeafPolicy, OrderingPolicy, SearchCore, control::SearchControl, kernel::PureNegamaxKernel,
         metrics::SearchMetrics,
     },
 };
 
-pub struct PureNegamaxSearcher<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> {
-    kernel: PureNegamaxKernel<TM, MG, LP>,
+pub struct PureNegamaxSearcher<
+    TM: TransitionManager,
+    MG: MoveGenerator,
+    LP: LeafPolicy,
+    OP: OrderingPolicy,
+> {
+    kernel: PureNegamaxKernel<TM, MG, LP, OP>,
 }
 
-impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> SearchCore
-    for PureNegamaxSearcher<TM, MG, LP>
+impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolicy> SearchCore
+    for PureNegamaxSearcher<TM, MG, LP, OP>
 {
     fn search_at_depth(
         &mut self,
@@ -68,14 +73,17 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> SearchCore
     }
 }
 
-impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> PureNegamaxSearcher<TM, MG, LP> {
+impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolicy>
+    PureNegamaxSearcher<TM, MG, LP, OP>
+{
     pub fn new(
         tm: TM,
         mg: MG,
         lp: LP,
+        op: OP,
         attacked_fn: fn(board: &Board, square: Square, attacking_color: Color) -> bool,
     ) -> Self {
-        let kernel = PureNegamaxKernel::new(tm, mg, lp, attacked_fn);
+        let kernel = PureNegamaxKernel::new(tm, mg, lp, op, attacked_fn);
 
         Self { kernel }
     }

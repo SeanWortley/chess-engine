@@ -12,18 +12,29 @@ impl MoveList {
             len: 0,
         }
     }
+
     pub fn push(&mut self, new_move: Move) {
         self.moves[self.len] = new_move;
         self.len += 1
     }
+
     pub fn len(&self) -> usize {
         self.len
     }
+
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
+
     pub fn iter(&self) -> impl Iterator<Item = &Move> {
         self.moves[..self.len].iter()
+    }
+
+    pub fn sort_by_key<F>(&mut self, f: F)
+    where
+        F: Fn(&Move) -> i16,
+    {
+        self.moves[..self.len].sort_by_key(|mv| std::cmp::Reverse(f(mv)));
     }
 }
 
