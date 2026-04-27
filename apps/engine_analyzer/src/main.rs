@@ -14,13 +14,13 @@ fn main() {
     let mut baseline_path = PathBuf::new();
     baseline_path.push(".engine_archive/linux/v4.1-SearchInfo");
     let baseline_args: Vec<String> = Vec::new();
-    let baseline = EngineConfig::new(String::from("baseline"), baseline_path, baseline_args);
+    let baseline = EngineConfig::new(String::from("v4.1"), baseline_path, baseline_args);
 
     // Candidate config
     let mut candidate_path = PathBuf::new();
     candidate_path.push("target/release/engine");
     let candidate_args: Vec<String> = Vec::new();
-    let candidate = EngineConfig::new(String::from("candidate"), candidate_path, candidate_args);
+    let candidate = EngineConfig::new(String::from("v5.0"), candidate_path, candidate_args);
 
     // Regression Check Sprt config
     let sprt_config = SprtConfig::new(-10.0, 0.0, 0.05, 0.05);
