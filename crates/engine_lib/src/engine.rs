@@ -7,6 +7,7 @@ use crate::{
         OrderingPolicy, SearchDriver, SearchReporter,
         alpha_beta::AlphaBetaSearcher,
         control::{SearchConstraint, SearchControl},
+        mvv_lva::MvvLva,
         no_ordering::NoOrdering,
         static_leaf::StaticLeaf,
     },
@@ -86,6 +87,20 @@ pub type V5Engine = Engine<
     NoOrdering,
 >;
 
+pub type V6Engine = Engine<
+    SearchDriver<
+        AlphaBetaSearcher<
+            CopyMakeTransition,
+            NaiveMoveGenerator<CopyMakeTransition>,
+            StaticLeaf<PestoEvaluator>,
+            MvvLva,
+        >,
+    >,
+    NaiveMoveGenerator<CopyMakeTransition>,
+    PestoEvaluator,
+    MvvLva,
+>;
+
 impl V2Engine {
     pub fn v2() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
@@ -160,6 +175,26 @@ impl V5Engine {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = PestoEvaluator::new();
         let ordering = NoOrdering {};
+
+        let core = AlphaBetaSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            StaticLeaf::new(PestoEvaluator::new()),
+            ordering.clone(),
+            ray_is_attacked,
+        );
+
+        let searcher = SearchDriver::iterative(core);
+
+        Engine::new(searcher, mg, evaluator, ordering)
+    }
+}
+
+impl V6Engine {
+    pub fn v6() -> Self {
+        let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
+        let evaluator = PestoEvaluator::new();
+        let ordering = MvvLva {};
 
         let core = AlphaBetaSearcher::new(
             CopyMakeTransition::new(),
