@@ -1,20 +1,32 @@
 use crate::{
     Board, Color, DRAW, IsAttackedFn, Move, MoveGenerator, MoveList, NEG_INF, PieceKind,
     SearchControl, Square, TransitionManager,
-    search::{LeafPolicy, metrics::SearchMetrics},
+    search::{LeafPolicy, OrderingPolicy, metrics::SearchMetrics},
 };
 
-pub struct AlphaBetaKernel<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> {
+pub struct AlphaBetaKernel<
+    TM: TransitionManager,
+    MG: MoveGenerator,
+    LP: LeafPolicy,
+    OP: OrderingPolicy,
+> {
     tm: TM,
     mg: MG,
     lp: LP,
+    op: OP,
     attacked_fn: IsAttackedFn,
 }
 
-pub struct PureNegamaxKernel<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> {
+pub struct PureNegamaxKernel<
+    TM: TransitionManager,
+    MG: MoveGenerator,
+    LP: LeafPolicy,
+    OP: OrderingPolicy,
+> {
     tm: TM,
     mg: MG,
     lp: LP,
+    op: OP,
     attacked_fn: IsAttackedFn,
 }
 
@@ -29,17 +41,21 @@ fn terminal_score_if_no_moves(board: &Board, attacked_fn: IsAttackedFn) -> i16 {
     if king_check { NEG_INF } else { DRAW }
 }
 
-impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> AlphaBetaKernel<TM, MG, LP> {
+impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolicy>
+    AlphaBetaKernel<TM, MG, LP, OP>
+{
     pub fn new(
         tm: TM,
         mg: MG,
         lp: LP,
+        op: OP,
         attacked_fn: fn(board: &Board, square: Square, attacking_color: Color) -> bool,
     ) -> Self {
         AlphaBetaKernel {
             tm,
             mg,
             lp,
+            op,
             attacked_fn,
         }
     }
@@ -112,17 +128,21 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> AlphaBetaKernel<T
     }
 }
 
-impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy> PureNegamaxKernel<TM, MG, LP> {
+impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolicy>
+    PureNegamaxKernel<TM, MG, LP, OP>
+{
     pub fn new(
         tm: TM,
         mg: MG,
         lp: LP,
+        op: OP,
         attacked_fn: fn(board: &Board, square: Square, attacking_color: Color) -> bool,
     ) -> Self {
         PureNegamaxKernel {
             tm,
             mg,
             lp,
+            op,
             attacked_fn,
         }
     }

@@ -4,63 +4,72 @@ use crate::{
     eval::{material::MaterialEvaluator, pesto::PestoEvaluator},
     move_gen::attacks::ray_is_attacked,
     search::{
-        SearchDriver, SearchReporter,
+        OrderingPolicy, SearchDriver, SearchReporter,
         alpha_beta::AlphaBetaSearcher,
         control::{SearchConstraint, SearchControl},
+        no_ordering::NoOrdering,
         static_leaf::StaticLeaf,
     },
 };
 
-// V1: CopyMakeTransition + PureNegamaxSearcher + NaiveMoveGenerator + RandomEvaluator.
+// V1: CopyMakeTransition + PureNegamaxSearcher + NaiveMoveGenerator + RandomEvaluator + NoOrdering.
 pub type V1Engine = Engine<
     SearchDriver<
         PureNegamaxSearcher<
             CopyMakeTransition,
             NaiveMoveGenerator<CopyMakeTransition>,
             StaticLeaf<RandomEvaluator>,
+            NoOrdering,
         >,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     RandomEvaluator,
+    NoOrdering,
 >;
 
-// V2: CopyMakeTransition + PureNegamaxSearcher + NaiveMoveGenerator + MaterialEvaluator.
+// V2: CopyMakeTransition + PureNegamaxSearcher + NaiveMoveGenerator + MaterialEvaluator + NoOrdering.
 pub type V2Engine = Engine<
     SearchDriver<
         PureNegamaxSearcher<
             CopyMakeTransition,
             NaiveMoveGenerator<CopyMakeTransition>,
             StaticLeaf<MaterialEvaluator>,
+            NoOrdering,
         >,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     MaterialEvaluator,
+    NoOrdering,
 >;
 
-// V3: CopyMakeTransition + DeepeningSearcher(PureNegamax core) + NaiveMoveGenerator + MaterialEvaluator.
+// V3: CopyMakeTransition + DeepeningSearcher(PureNegamax core) + NaiveMoveGenerator + MaterialEvaluator + NoOrdering.
 pub type V3Engine = Engine<
     SearchDriver<
         PureNegamaxSearcher<
             CopyMakeTransition,
             NaiveMoveGenerator<CopyMakeTransition>,
             StaticLeaf<MaterialEvaluator>,
+            NoOrdering,
         >,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     MaterialEvaluator,
+    NoOrdering,
 >;
 
-// V4: CopyMakeTransition + DeepeningSearcher(AlphaBeta core) + NaiveMoveGenerator + MaterialEvaluator.
+// V4: CopyMakeTransition + DeepeningSearcher(AlphaBeta core) + NaiveMoveGenerator + MaterialEvaluator + NoOrdering.
 pub type V4Engine = Engine<
     SearchDriver<
         AlphaBetaSearcher<
             CopyMakeTransition,
             NaiveMoveGenerator<CopyMakeTransition>,
             StaticLeaf<MaterialEvaluator>,
+            NoOrdering,
         >,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     MaterialEvaluator,
+    NoOrdering,
 >;
 
 pub type V5Engine = Engine<
@@ -69,38 +78,44 @@ pub type V5Engine = Engine<
             CopyMakeTransition,
             NaiveMoveGenerator<CopyMakeTransition>,
             StaticLeaf<PestoEvaluator>,
+            NoOrdering,
         >,
     >,
     NaiveMoveGenerator<CopyMakeTransition>,
     PestoEvaluator,
+    NoOrdering,
 >;
 
 impl V2Engine {
     pub fn v2() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = MaterialEvaluator::new();
+        let ordering = NoOrdering {};
         let core = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             StaticLeaf::new(MaterialEvaluator::new()),
+            ordering.clone(),
             ray_is_attacked,
         );
         let searcher = SearchDriver::fixed(core);
-        Engine::new(searcher, mg, evaluator)
+        Engine::new(searcher, mg, evaluator, ordering)
     }
 }
 impl V1Engine {
     pub fn v1() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = RandomEvaluator::new();
+        let ordering = NoOrdering {};
         let core = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             StaticLeaf::new(RandomEvaluator::new()),
+            ordering.clone(),
             ray_is_attacked,
         );
         let searcher = SearchDriver::fixed(core);
-        Engine::new(searcher, mg, evaluator)
+        Engine::new(searcher, mg, evaluator, ordering)
     }
 }
 
@@ -108,15 +123,17 @@ impl V3Engine {
     pub fn v3() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = MaterialEvaluator::new();
+        let ordering = NoOrdering {};
         let core = PureNegamaxSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             StaticLeaf::new(MaterialEvaluator::new()),
+            ordering.clone(),
             ray_is_attacked,
         );
         let searcher = SearchDriver::iterative(core);
 
-        Engine::new(searcher, mg, evaluator)
+        Engine::new(searcher, mg, evaluator, ordering)
     }
 }
 
@@ -124,15 +141,17 @@ impl V4Engine {
     pub fn v4() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = MaterialEvaluator::new();
+        let ordering = NoOrdering {};
         let core = AlphaBetaSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             StaticLeaf::new(MaterialEvaluator::new()),
+            ordering.clone(),
             ray_is_attacked,
         );
         let searcher = SearchDriver::iterative(core);
 
-        Engine::new(searcher, mg, evaluator)
+        Engine::new(searcher, mg, evaluator, ordering)
     }
 }
 
@@ -140,42 +159,48 @@ impl V5Engine {
     pub fn v5() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
         let evaluator = PestoEvaluator::new();
+        let ordering = NoOrdering {};
 
         let core = AlphaBetaSearcher::new(
             CopyMakeTransition::new(),
             NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
             StaticLeaf::new(PestoEvaluator::new()),
+            ordering.clone(),
             ray_is_attacked,
         );
 
         let searcher = SearchDriver::iterative(core);
 
-        Engine::new(searcher, mg, evaluator)
+        Engine::new(searcher, mg, evaluator, ordering)
     }
 }
 
-pub struct Engine<S, MG, E>
+pub struct Engine<S, MG, E, OP>
 where
     S: Searcher,
     MG: MoveGenerator,
     E: Evaluator,
+    OP: OrderingPolicy,
 {
     searcher: S,
     move_generator: MG,
     evaluator: E,
+    ordering_policy: OP,
 }
 
-impl<S, MG, E> Engine<S, MG, E>
+impl<S, MG, E, OP> Engine<S, MG, E, OP>
 where
     S: Searcher,
     MG: MoveGenerator,
     E: Evaluator,
+    OP: OrderingPolicy,
 {
-    pub fn new(searcher: S, move_generator: MG, evaluator: E) -> Self {
+    pub fn new(searcher: S, move_generator: MG, evaluator: E, ordering_policy: OP) -> Self {
         Engine {
             searcher,
             move_generator,
             evaluator,
+            ordering_policy,
         }
     }
 
@@ -193,7 +218,7 @@ where
     pub fn generate_moves(&mut self, board: &mut Board) -> MoveList {
         let mut moves = MoveList::new();
         self.move_generator.generate_moves(board, &mut moves);
-        moves
+        self.ordering_policy.order_moves(board, moves)
     }
 
     pub fn evaluate(&self, board: &Board) -> i16 {

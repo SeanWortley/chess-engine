@@ -52,11 +52,14 @@ enum WorkerCommand {
     Quit,
 }
 
-fn worker_loop<S, MG, E>(mut engine: Engine<S, MG, E>, command_rx: Receiver<WorkerCommand>)
+use engine_lib::search::{no_ordering::NoOrdering, OrderingPolicy};
+
+fn worker_loop<S, MG, E, OP>(mut engine: Engine<S, MG, E, OP>, command_rx: Receiver<WorkerCommand>)
 where
     S: Searcher,
     MG: MoveGenerator,
     E: Evaluator,
+    OP: OrderingPolicy,
 {
     while let Ok(command) = command_rx.recv() {
         match command {
@@ -80,11 +83,12 @@ where
     }
 }
 
-pub fn run<S, MG, E>(engine: Engine<S, MG, E>)
+pub fn run<S, MG, E, OP>(engine: Engine<S, MG, E, OP>)
 where
     S: Searcher + Send + 'static,
     MG: MoveGenerator + Send + 'static,
     E: Evaluator + Send + 'static,
+    OP: OrderingPolicy + Send + 'static,
 {
     let mut board = Board::starting_position();
     let mut control_handle: Option<SearchControl> = None;
@@ -309,11 +313,12 @@ fn send_bestmove(result: SearchResult) {
     }
 }
 
-fn perft<S, MG, E>(engine: &mut Engine<S, MG, E>, board: &mut Board, depth: u8) -> u64
+fn perft<S, MG, E, OP>(engine: &mut Engine<S, MG, E, OP>, board: &mut Board, depth: u8) -> u64
 where
     S: Searcher,
     MG: MoveGenerator,
     E: Evaluator,
+    OP: OrderingPolicy,
 {
     if depth == 0 {
         return 1;

@@ -1,13 +1,15 @@
 use crate::search::control::{SearchConstraint, SearchControl};
 use crate::search::metrics::SearchMetrics;
-use crate::{Board, Move};
+use crate::{Board, Move, MoveList};
 
 pub mod alpha_beta;
 pub mod control;
 pub mod driver;
 pub mod kernel;
 pub mod metrics;
+pub mod mvv_lva;
 pub mod negamax;
+pub mod no_ordering;
 pub mod static_leaf;
 
 pub use driver::SearchDriver;
@@ -62,4 +64,8 @@ pub trait SearchCore {
 
 pub trait LeafPolicy {
     fn evaluate_leaf(&mut self, board: &mut Board, alpha: i16, beta: i16) -> i16;
+}
+
+pub trait OrderingPolicy {
+    fn order_moves(&mut self, board: &mut Board, moves: MoveList) -> MoveList;
 }
