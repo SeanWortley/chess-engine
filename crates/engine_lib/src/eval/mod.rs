@@ -1,6 +1,7 @@
 use crate::Board;
 
 pub mod material;
+pub mod pesto;
 pub mod random;
 
 pub use random::RandomEvaluator;
