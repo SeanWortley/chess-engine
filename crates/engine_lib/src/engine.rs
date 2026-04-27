@@ -253,8 +253,11 @@ where
     pub fn generate_moves(&mut self, board: &mut Board) -> MoveList {
         let mut moves = MoveList::new();
         self.move_generator.generate_moves(board, &mut moves);
-        self.ordering_policy.order_moves(board, &mut moves);
         moves
+    }
+
+    pub fn order_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
+        self.ordering_policy.order_moves(board, moves);
     }
 
     pub fn evaluate(&self, board: &Board) -> i16 {
