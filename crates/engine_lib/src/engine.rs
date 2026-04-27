@@ -1,7 +1,7 @@
 use crate::{
     Board, CopyMakeTransition, Evaluator, Move, MoveGenerator, MoveList, NaiveMoveGenerator,
     PureNegamaxSearcher, RandomEvaluator, SearchResult, Searcher,
-    eval::material::MaterialEvaluator,
+    eval::{material::MaterialEvaluator, pesto::PestoEvaluator},
     move_gen::attacks::ray_is_attacked,
     search::{
         SearchDriver, SearchReporter,
@@ -63,6 +63,18 @@ pub type V4Engine = Engine<
     MaterialEvaluator,
 >;
 
+pub type V5Engine = Engine<
+    SearchDriver<
+        AlphaBetaSearcher<
+            CopyMakeTransition,
+            NaiveMoveGenerator<CopyMakeTransition>,
+            StaticLeaf<PestoEvaluator>,
+        >,
+    >,
+    NaiveMoveGenerator<CopyMakeTransition>,
+    PestoEvaluator,
+>;
+
 impl V2Engine {
     pub fn v2() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
@@ -118,6 +130,24 @@ impl V4Engine {
             StaticLeaf::new(MaterialEvaluator::new()),
             ray_is_attacked,
         );
+        let searcher = SearchDriver::iterative(core);
+
+        Engine::new(searcher, mg, evaluator)
+    }
+}
+
+impl V5Engine {
+    pub fn v5() -> Self {
+        let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
+        let evaluator = PestoEvaluator::new();
+
+        let core = AlphaBetaSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            StaticLeaf::new(PestoEvaluator::new()),
+            ray_is_attacked,
+        );
+
         let searcher = SearchDriver::iterative(core);
 
         Engine::new(searcher, mg, evaluator)

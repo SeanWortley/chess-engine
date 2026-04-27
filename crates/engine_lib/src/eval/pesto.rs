@@ -1,18 +1,17 @@
 use crate::core::board::{Color, PieceKind};
+use crate::eval::material::MaterialEvaluator;
 use crate::{Board, Evaluator};
 
 // PeSTO's implementation, values ripped from the wiki :)
 
-const PHASE_WEIGHTS: [u8; 6] = [
-    0, // Pawn
+const PHASE_WEIGHTS: [i16; 4] = [
     1, // Knight
     1, // Bishop
     2, // Rook
     4, // Queen
-    0, // King
 ];
 
-const MAX_PHASE: u8 = 24; // When its just two kings and pawns
+const MAX_PHASE: i16 = 24; // When its just two kings and pawns
 
 const MG_PAWN_TABLE: [i16; 64] = [
     0, 0, 0, 0, 0, 0, 0, 0, 98, 134, 61, 95, 68, 126, 34, -11, -6, 7, 26, 31, 65, 56, 25, -20, -14,
@@ -106,57 +105,127 @@ const EG_TABLES: [[i16; 64]; 6] = [
     EG_KING_TABLE,
 ];
 
-fn game_phase(board: &Board) -> u8 {
-    let mut phase = 0;
-    for color in [Color::White, Color::Black] {
-        for (kind, weight) in [
-            PieceKind::Knight,
-            PieceKind::Bishop,
-            PieceKind::Rook,
-            PieceKind::Queen,
-        ]
-        .iter()
-        .zip([1, 1, 2, 3])
-        {
-            phase += weight * board.bitboard(color, *kind).count() as u8;
-        }
-    }
-    phase
+pub struct PestoEvaluator {
+    material_evaluator: MaterialEvaluator,
 }
-
-pub struct PestoEvaluator;
 
 impl PestoEvaluator {
     pub fn new() -> Self {
-        PestoEvaluator
+        PestoEvaluator {
+            material_evaluator: MaterialEvaluator::new(),
+        }
     }
 
-    fn middlegame_eval(board: &Board) -> i16 {
+    fn game_phase(&self, board: &Board) -> i16 {
+        let mut phase = 0;
         for color in [Color::White, Color::Black] {
-            for (kind, table) in [
-                PieceKind::Pawn,
+            for (kind, weight) in [
                 PieceKind::Knight,
                 PieceKind::Bishop,
                 PieceKind::Rook,
                 PieceKind::Queen,
-                PieceKind::King,
             ]
             .iter()
-            {}
+            .zip(PHASE_WEIGHTS)
+            {
+                phase += weight * board.bitboard(color, *kind).count() as i16;
+            }
         }
-        1
+        phase
     }
 
-    fn endgame_eval(board: &Board) -> i16 {}
+    fn middlegame_eval(&self, board: &Board) -> i16 {
+        let mut score = 0;
+
+        for kind in [
+            PieceKind::Pawn,
+            PieceKind::Knight,
+            PieceKind::Bishop,
+            PieceKind::Rook,
+            PieceKind::Queen,
+            PieceKind::King,
+        ]
+        .iter()
+        {
+            // Increment for friendly pieces
+            let bitboard = board.bitboard(board.to_move(), *kind);
+            for idx in bitboard.iter() {
+                if board.to_move() == Color::White {
+                    let table = MG_TABLES[*kind as usize];
+                    score += table[(idx ^ 56) as usize];
+                } else {
+                    let table = MG_TABLES[*kind as usize];
+                    score += table[idx as usize];
+                }
+            }
+
+            // Decrement for enemy pieces
+            let bitboard = board.bitboard(board.to_move().opponent(), *kind);
+            for idx in bitboard.iter() {
+                if board.to_move().opponent() == Color::White {
+                    let table = MG_TABLES[*kind as usize];
+                    score -= table[(idx ^ 56) as usize];
+                } else {
+                    let table = MG_TABLES[*kind as usize];
+                    score -= table[idx as usize];
+                }
+            }
+        }
+        score
+    }
+
+    fn endgame_eval(&self, board: &Board) -> i16 {
+        let mut score = 0;
+
+        for kind in [
+            PieceKind::Pawn,
+            PieceKind::Knight,
+            PieceKind::Bishop,
+            PieceKind::Rook,
+            PieceKind::Queen,
+            PieceKind::King,
+        ]
+        .iter()
+        {
+            // Increment for friendly pieces
+            let bitboard = board.bitboard(board.to_move(), *kind);
+            for idx in bitboard.iter() {
+                if board.to_move() == Color::White {
+                    let table = EG_TABLES[*kind as usize];
+                    score += table[(idx ^ 56) as usize];
+                } else {
+                    let table = EG_TABLES[*kind as usize];
+                    score += table[idx as usize];
+                }
+            }
+
+            // Decrement for enemy pieces
+            let bitboard = board.bitboard(board.to_move().opponent(), *kind);
+            for idx in bitboard.iter() {
+                if board.to_move().opponent() == Color::White {
+                    let table = EG_TABLES[*kind as usize];
+                    score -= table[(idx ^ 56) as usize];
+                } else {
+                    let table = EG_TABLES[*kind as usize];
+                    score -= table[idx as usize];
+                }
+            }
+        }
+        score
+    }
 }
 
 impl Evaluator for PestoEvaluator {
     fn evaluate(&self, board: &Board) -> i16 {
-        let phase = game_phase(board);
+        let phase = self.game_phase(board);
 
-        let middlegame_score = middlegame_eval(board);
-        let endgame_score = endgame_eval(board);
+        let middlegame_score = self.middlegame_eval(board);
+        let endgame_score = self.endgame_eval(board);
 
-        (middlegame_score * phase + endgame_score * (MAX_PHASE - phase)) / MAX_PHASE
+        let material_eval = self.material_evaluator.evaluate(board);
+        let positional_bonus =
+            (middlegame_score * phase + endgame_score * (MAX_PHASE - phase)) / MAX_PHASE;
+
+        material_eval + positional_bonus
     }
 }
