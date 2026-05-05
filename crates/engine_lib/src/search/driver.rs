@@ -4,12 +4,14 @@ use crate::{
         SearchCore, SearchReporter, Searcher,
         control::{SearchConstraint, SearchControl},
         metrics::SearchMetrics,
+        zobrist::SearchContext,
     },
 };
 
 pub struct SearchDriver<S: SearchCore> {
     core_searcher: S,
     mode: SearchMode,
+    context: SearchContext,
 }
 
 pub enum SearchMode {
@@ -18,12 +20,14 @@ pub enum SearchMode {
 }
 
 const DEFAULT_DEEPENING_DEPTH: u8 = 4;
+const DEFAULT_TT_SIZE: usize = 256;
 
 impl<S: SearchCore> SearchDriver<S> {
     pub fn new(core_searcher: S, mode: SearchMode) -> Self {
         Self {
             core_searcher,
             mode,
+            context: SearchContext::with_tt(DEFAULT_TT_SIZE),
         }
     }
 

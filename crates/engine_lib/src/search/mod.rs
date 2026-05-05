@@ -11,6 +11,7 @@ pub mod mvv_lva;
 pub mod negamax;
 pub mod no_ordering;
 pub mod static_leaf;
+pub mod zobrist;
 
 pub use driver::SearchDriver;
 pub use negamax::PureNegamaxSearcher;
