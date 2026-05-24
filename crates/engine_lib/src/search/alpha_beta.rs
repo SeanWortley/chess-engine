@@ -3,7 +3,7 @@ use crate::{
     TransitionManager,
     search::{
         LeafPolicy, OrderingPolicy, SearchCore, control::SearchControl, kernel::AlphaBetaKernel,
-        metrics::SearchMetrics,
+        metrics::SearchMetrics, zobrist::SearchContext,
     },
 };
 
@@ -22,6 +22,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
     fn search_at_depth(
         &mut self,
         board: &mut Board,
+        context: &mut SearchContext,
         depth: u8,
         control: &SearchControl,
         metrics: &mut SearchMetrics,

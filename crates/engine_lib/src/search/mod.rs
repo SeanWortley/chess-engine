@@ -1,5 +1,6 @@
 use crate::search::control::{SearchConstraint, SearchControl};
 use crate::search::metrics::SearchMetrics;
+use crate::search::zobrist::SearchContext;
 use crate::{Board, Move, MoveList};
 
 pub mod alpha_beta;
@@ -53,6 +54,7 @@ pub trait SearchCore {
     fn search_at_depth(
         &mut self,
         board: &mut Board,
+        context: &mut SearchContext,
         depth: u8,
         control: &SearchControl,
         metrics: &mut SearchMetrics,

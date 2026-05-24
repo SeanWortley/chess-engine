@@ -1,4 +1,8 @@
+use crate::Board;
+use crate::CastlingRights;
+use crate::Color;
 use crate::Move;
+use crate::Square;
 use rand::Rng;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -17,7 +21,15 @@ impl SearchContext {
             zobrist: Some(ZobristTable::new()),
         }
     }
+
+    pub fn without_tt() -> Self {
+        SearchContext {
+            tt: None,
+            zobrist: None,
+        }
+    }
 }
+
 pub struct TranspositionTable {
     entries: Vec<Option<TTEntry>>, // This will be heap regardless, so might as well use a vec
     size: usize,
@@ -29,6 +41,43 @@ impl TranspositionTable {
         let size = size.next_power_of_two();
         let entries: Vec<Option<TTEntry>> = vec![None; size];
         Self { entries, size }
+    }
+
+    fn index(&self, hash: u64) -> usize {
+        (hash as usize) & (self.size - 1) // Bitwise AND - SUPA FAST 
+    }
+
+    pub fn probe(&self, hash: u64, depth: u8) -> Option<&TTEntry> {
+        let entry = self.entries[self.index(hash)].as_ref();
+        match entry {
+            Some(entry) => {
+                if entry.key == hash && entry.depth >= depth {
+                    Some(entry)
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
+
+    pub fn probe_move(&self, hash: u64) -> Option<Move> {
+        let entry = self.entries[self.index(hash)].as_ref();
+        match entry {
+            Some(entry) => {
+                if entry.key == hash {
+                    Some(entry.best_move)
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
+
+    pub fn store(&mut self, entry: TTEntry) {
+        let idx = self.index(entry.key);
+        self.entries[idx] = Some(entry);
     }
 }
 
@@ -74,5 +123,45 @@ impl ZobristTable {
             castling_rights: core::array::from_fn(|_| rng.random::<u64>()),
             en_passant: core::array::from_fn(|_| rng.random::<u64>()),
         }
+    }
+
+    pub fn compute_from_scratch(&self, board: &Board) -> u64 {
+        // Can use mailbox here, since speed doesn't matter - only called once per search
+        let mut hash = 0u64;
+
+        // XOR Pieces
+        for idx in 0..64 {
+            if let Some(piece) = board.get_piece(Square::from_index(idx)) {
+                hash ^= self.pieces[piece.color as usize][piece.kind as usize][idx as usize];
+            }
+        }
+
+        // XOR Side to Move
+        if board.to_move() == Color::Black {
+            hash ^= self.side_to_move;
+        }
+
+        // XOR Castling Rights
+        let castling_rights = board.rights();
+
+        if castling_rights.has_rights(CastlingRights::WHITE_KINGSIDE) {
+            hash ^= self.castling_rights[0]
+        }
+        if castling_rights.has_rights(CastlingRights::WHITE_QUEENSIDE) {
+            hash ^= self.castling_rights[1]
+        }
+        if castling_rights.has_rights(CastlingRights::BLACK_KINGSIDE) {
+            hash ^= self.castling_rights[2]
+        }
+        if castling_rights.has_rights(CastlingRights::BLACK_QUEENSIDE) {
+            hash ^= self.castling_rights[3]
+        }
+
+        // XOR EP File
+        if let Some(ep_square) = board.en_passant() {
+            hash ^= self.en_passant[ep_square.file() as usize];
+        }
+
+        hash
     }
 }

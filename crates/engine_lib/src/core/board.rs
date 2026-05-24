@@ -7,6 +7,7 @@ use std::fmt;
 pub struct Board {
     bitboards: [[Bitboard; 6]; 2],
     squares: [Option<Piece>; 64],
+    hash: u64,
     to_move: Color,
     castling: CastlingRights,
     en_passant: Option<Square>,
@@ -72,6 +73,7 @@ impl Board {
         Board {
             bitboards: [[Bitboard::EMPTY; 6]; 2],
             squares: [None; 64],
+            hash: 0,
             to_move: Color::White,
             castling: CastlingRights(0),
             en_passant: None,
@@ -96,7 +98,7 @@ impl Board {
             | self.bitboards[Color::Black as usize][PieceKind::Rook as usize]
             | self.bitboards[Color::Black as usize][PieceKind::Queen as usize]
     }
-  
+
     pub fn get_piece(&self, square: Square) -> Option<Piece> {
         self.squares[square.index() as usize]
     }
@@ -122,12 +124,29 @@ impl Board {
         }
         occupied
     }
+
+    pub fn en_passant(&self) -> Option<Square> {
+        self.en_passant
+    }
+
     pub fn is_en_passant(&self, square: Square) -> bool {
         self.en_passant == Some(square)
     }
 
     pub fn rights(&self) -> CastlingRights {
         self.castling
+    }
+
+    pub fn hash(&self) -> u64 {
+        self.hash
+    }
+
+    pub fn set_hash(&mut self, new_hash: u64) {
+        self.hash = new_hash;
+    }
+
+    pub fn xor(&mut self, component: u64) {
+        self.hash ^= component;
     }
 
     // To Do: Add error passing on invalid move, should make perft debugging easier :)

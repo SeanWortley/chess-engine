@@ -4,45 +4,70 @@ use crate::{
         SearchCore, SearchReporter, Searcher,
         control::{SearchConstraint, SearchControl},
         metrics::SearchMetrics,
-        zobrist::SearchContext,
+        zobrist::{SearchContext, TranspositionTable, ZobristTable},
     },
 };
 
 pub struct SearchDriver<S: SearchCore> {
     core_searcher: S,
-    mode: SearchMode,
+    iterative_mode: IterativeMode,
     context: SearchContext,
 }
 
-pub enum SearchMode {
+pub enum IterativeMode {
     Iterative,
     FixedDepth,
+}
+
+pub enum TTMode {
+    WithTT,
+    WithoutTT,
 }
 
 const DEFAULT_DEEPENING_DEPTH: u8 = 4;
 const DEFAULT_TT_SIZE: usize = 256;
 
 impl<S: SearchCore> SearchDriver<S> {
-    pub fn new(core_searcher: S, mode: SearchMode) -> Self {
+    pub fn new(core_searcher: S, iterative_mode: IterativeMode, tt_mode: TTMode) -> Self {
         Self {
             core_searcher,
-            mode,
-            context: SearchContext::with_tt(DEFAULT_TT_SIZE),
+            iterative_mode,
+            context: {
+                match tt_mode {
+                    TTMode::WithTT => SearchContext {
+                        tt: Some(TranspositionTable::new(DEFAULT_TT_SIZE)),
+                        zobrist: Some(ZobristTable::new()),
+                    },
+
+                    TTMode::WithoutTT => SearchContext {
+                        tt: None,
+                        zobrist: None,
+                    },
+                }
+            },
         }
     }
 
-    pub fn iterative(core_searcher: S) -> Self {
-        Self::new(core_searcher, SearchMode::Iterative)
+    pub fn iterative_tt(core_searcher: S) -> Self {
+        Self::new(core_searcher, IterativeMode::Iterative, TTMode::WithTT)
     }
 
-    pub fn fixed(core_searcher: S) -> Self {
-        Self::new(core_searcher, SearchMode::FixedDepth)
+    pub fn fixed_tt(core_searcher: S) -> Self {
+        Self::new(core_searcher, IterativeMode::FixedDepth, TTMode::WithTT)
+    }
+
+    pub fn iterative_no_tt(core_searcher: S) -> Self {
+        Self::new(core_searcher, IterativeMode::Iterative, TTMode::WithoutTT)
+    }
+
+    pub fn fixed_no_tt(core_searcher: S) -> Self {
+        Self::new(core_searcher, IterativeMode::FixedDepth, TTMode::WithoutTT)
     }
 
     pub fn is_iterative(&self) -> bool {
-        match self.mode {
-            SearchMode::Iterative => true,
-            SearchMode::FixedDepth => false,
+        match self.iterative_mode {
+            IterativeMode::Iterative => true,
+            IterativeMode::FixedDepth => false,
         }
     }
 }
@@ -57,11 +82,15 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
     ) -> SearchResult {
         let mut metrics = SearchMetrics::new();
 
+        if let Some(zobrist) = &self.context.zobrist {
+            board.set_hash(zobrist.compute_from_scratch(board));
+        }
+
         let requested_depth_limit = match constraint.max_depth {
             Some(depth) => depth,
-            None => match self.mode {
-                SearchMode::Iterative => u8::MAX,
-                SearchMode::FixedDepth => DEFAULT_DEEPENING_DEPTH,
+            None => match self.iterative_mode {
+                IterativeMode::Iterative => u8::MAX,
+                IterativeMode::FixedDepth => DEFAULT_DEEPENING_DEPTH,
             },
         };
 
@@ -69,6 +98,7 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
         if !(self.is_iterative()) {
             let result = self.core_searcher.search_at_depth(
                 board,
+                &mut self.context,
                 requested_depth_limit,
                 control,
                 &mut metrics,
@@ -96,9 +126,13 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
                 break;
             }
 
-            let new_result =
-                self.core_searcher
-                    .search_at_depth(board, current_depth, control, &mut metrics);
+            let new_result = self.core_searcher.search_at_depth(
+                board,
+                &mut self.context,
+                current_depth,
+                control,
+                &mut metrics,
+            );
 
             if !control.should_stop(&mut metrics) {
                 best_result = new_result;

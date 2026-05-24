@@ -113,7 +113,7 @@ impl V2Engine {
             ordering.clone(),
             ray_is_attacked,
         );
-        let searcher = SearchDriver::fixed(core);
+        let searcher = SearchDriver::fixed_no_tt(core);
         Engine::new(searcher, mg, evaluator, ordering)
     }
 }
@@ -129,7 +129,7 @@ impl V1Engine {
             ordering.clone(),
             ray_is_attacked,
         );
-        let searcher = SearchDriver::fixed(core);
+        let searcher = SearchDriver::fixed_no_tt(core);
         Engine::new(searcher, mg, evaluator, ordering)
     }
 }
@@ -146,7 +146,7 @@ impl V3Engine {
             ordering.clone(),
             ray_is_attacked,
         );
-        let searcher = SearchDriver::iterative(core);
+        let searcher = SearchDriver::iterative_no_tt(core);
 
         Engine::new(searcher, mg, evaluator, ordering)
     }
@@ -164,7 +164,7 @@ impl V4Engine {
             ordering.clone(),
             ray_is_attacked,
         );
-        let searcher = SearchDriver::iterative(core);
+        let searcher = SearchDriver::iterative_no_tt(core);
 
         Engine::new(searcher, mg, evaluator, ordering)
     }
@@ -184,7 +184,7 @@ impl V5Engine {
             ray_is_attacked,
         );
 
-        let searcher = SearchDriver::iterative(core);
+        let searcher = SearchDriver::iterative_no_tt(core);
 
         Engine::new(searcher, mg, evaluator, ordering)
     }
@@ -204,7 +204,7 @@ impl V6Engine {
             ray_is_attacked,
         );
 
-        let searcher = SearchDriver::iterative(core);
+        let searcher = SearchDriver::iterative_no_tt(core);
 
         Engine::new(searcher, mg, evaluator, ordering)
     }
