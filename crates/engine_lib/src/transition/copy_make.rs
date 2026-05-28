@@ -20,10 +20,10 @@ impl Default for CopyMakeTransition {
 }
 
 impl TransitionManager for CopyMakeTransition {
-    fn make(&mut self, board: &mut Board, mv: Move) {
+    fn make(&mut self, board: &mut Board, mv: Move, zobrist: Option<&crate::search::zobrist::ZobristTable>) {
         self.history.push(board.clone());
         let mut copy = board.clone();
-        copy.apply(mv);
+        copy.apply(mv, zobrist);
         *board = copy;
     }
 

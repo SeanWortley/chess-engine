@@ -12,7 +12,7 @@ fn main() {
 
     // Baseline config
     let mut baseline_path = PathBuf::new();
-    baseline_path.push(".engine_archive/linux/v5.0-PestoEval");
+    baseline_path.push(".engine_archive/linux/v6.0-MvvLva");
     let baseline_args: Vec<String> = Vec::new();
     let baseline = EngineConfig::new(String::from("v5.0"), baseline_path, baseline_args);
 

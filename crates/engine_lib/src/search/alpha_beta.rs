@@ -49,7 +49,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 break;
             }
 
-            self.kernel.make(board, *mv);
+            self.kernel.make(board, *mv, context);
             let score = self
                 .kernel
                 .alpha_beta(
@@ -59,6 +59,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                     depth.saturating_sub(1),
                     control,
                     metrics,
+                    context,
                 )
                 .saturating_neg();
             self.kernel.unmake(board, *mv);
@@ -82,7 +83,8 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
     }
 
     fn make(&mut self, board: &mut Board, mv: Move) {
-        self.kernel.make(board, mv);
+        let mut context = SearchContext::without_tt();
+        self.kernel.make(board, mv, &mut context);
     }
 
     fn unmake(&mut self, board: &mut Board, mv: Move) {

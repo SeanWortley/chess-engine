@@ -101,6 +101,20 @@ pub type V6Engine = Engine<
     MvvLva,
 >;
 
+pub type V7Engine = Engine<
+    SearchDriver<
+        AlphaBetaSearcher<
+            CopyMakeTransition,
+            NaiveMoveGenerator<CopyMakeTransition>,
+            StaticLeaf<PestoEvaluator>,
+            MvvLva,
+        >,
+    >,
+    NaiveMoveGenerator<CopyMakeTransition>,
+    PestoEvaluator,
+    MvvLva,
+>;
+
 impl V2Engine {
     pub fn v2() -> Self {
         let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
@@ -205,6 +219,26 @@ impl V6Engine {
         );
 
         let searcher = SearchDriver::iterative_no_tt(core);
+
+        Engine::new(searcher, mg, evaluator, ordering)
+    }
+}
+
+impl V7Engine {
+    pub fn v7() -> Self {
+        let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
+        let evaluator = PestoEvaluator::new();
+        let ordering = MvvLva {};
+
+        let core = AlphaBetaSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            StaticLeaf::new(PestoEvaluator::new()),
+            ordering.clone(),
+            ray_is_attacked,
+        );
+
+        let searcher = SearchDriver::iterative_tt(core);
 
         Engine::new(searcher, mg, evaluator, ordering)
     }

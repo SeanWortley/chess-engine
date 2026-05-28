@@ -22,7 +22,7 @@ impl<TM: TransitionManager> MoveGenerator for NaiveMoveGenerator<TM> {
         self.generate_pseudo_legal(board, &mut pseudo, true);
 
         for mv in pseudo.iter() {
-            self.tm.make(board, *mv);
+            self.tm.make(board, *mv, None);
 
             let king_board = board.bitboard(board.to_move().opponent(), King);
             let king_square = Square::from_index((king_board.lsb()).unwrap());

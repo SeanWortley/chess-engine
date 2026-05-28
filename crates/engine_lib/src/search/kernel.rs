@@ -1,7 +1,7 @@
 use crate::{
     Board, Color, DRAW, IsAttackedFn, Move, MoveGenerator, MoveList, NEG_INF, PieceKind,
     SearchControl, Square, TransitionManager,
-    search::{LeafPolicy, OrderingPolicy, metrics::SearchMetrics},
+    search::{LeafPolicy, OrderingPolicy, metrics::SearchMetrics, zobrist::{SearchContext, TTEntry, TTFlag}},
 };
 
 pub struct AlphaBetaKernel<
@@ -76,6 +76,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         depth: u8,
         control: &SearchControl,
         metrics: &mut SearchMetrics,
+        context: &mut SearchContext,
     ) -> i16 {
         metrics.increment();
 
@@ -83,12 +84,25 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             return self.lp.evaluate_leaf(board, alpha, beta);
         }
 
+        if let Some(table) = &context.tt {
+            if let Some(entry) = table.probe(board.hash(), depth) {
+                match entry.flag {
+                    TTFlag::Exact => return entry.score,
+                    TTFlag::LowerBound if entry.score >= beta => return entry.score,
+                    TTFlag::UpperBound if entry.score <= alpha => return entry.score,
+                    _ => {},
+                }
+            }
+        }
+
         let mut moves = MoveList::new();
         self.generate_moves(board, &mut moves);
         self.op.order_moves(board, &mut moves);
 
+        let original_alpha = alpha;
         let mut alpha = alpha;
         let mut best_score = i16::MIN;
+        let mut best_move: Option<Move> = None;
 
         // Check for checkmate or stalemate
         if moves.is_empty() {
@@ -100,14 +114,17 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 break;
             }
 
-            self.tm.make(board, *mv);
+            self.tm.make(board, *mv, context.zobrist.as_ref());
             let score = self
-                .alpha_beta(board, -beta, -alpha, depth - 1, control, metrics)
+                .alpha_beta(board, -beta, -alpha, depth - 1, control, metrics, context)
                 .saturating_neg();
+            
+
             self.tm.unmake(board, *mv);
 
             if score > best_score {
                 best_score = score;
+                best_move = Some(*mv);
             }
             if score > alpha {
                 alpha = score;
@@ -117,11 +134,34 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             }
         }
 
+        if let Some(table) = &mut context.tt {
+            if let Some(best_move) = best_move {
+                let flag = if best_score <= original_alpha {
+                    // No move improved alpha; this is an upper bound
+                    TTFlag::UpperBound
+                } else if best_score >= beta {
+                    // Beta cutoff; this is a lower bound
+                    TTFlag::LowerBound
+                } else {
+                    // Move improved alpha but didn't cause cutoff; exact value
+                    TTFlag::Exact
+                };
+
+                let entry = TTEntry {
+                    key: board.hash(),
+                    score: best_score,
+                    best_move,
+                    depth,
+                    flag,
+                };
+                table.store(entry);
+            }
+        }
         best_score
     }
 
-    pub fn make(&mut self, board: &mut Board, mv: Move) {
-        self.tm.make(board, mv);
+    pub fn make(&mut self, board: &mut Board, mv: Move, context: &mut SearchContext) {
+        self.tm.make(board, mv, context.zobrist.as_ref());
     }
 
     pub fn unmake(&mut self, board: &mut Board, mv: Move) {
@@ -162,6 +202,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         depth: u8,
         control: &SearchControl,
         metrics: &mut SearchMetrics,
+        context: &mut SearchContext,
     ) -> i16 {
         metrics.increment();
 
@@ -169,11 +210,18 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             return self.lp.evaluate_leaf(board, NEG_INF, i16::MAX);
         }
 
+        if let Some(table) = &context.tt {
+            if let Some(entry) = table.probe(board.hash(), depth) {
+                return entry.score;
+            }
+        }
+
         let mut moves = MoveList::new();
         self.generate_moves(board, &mut moves);
         self.op.order_moves(board, &mut moves);
 
         let mut best_score = i16::MIN;
+        let mut best_move: Option<Move> = None;
 
         // Check for checkmate or stalemate.
         if moves.is_empty() {
@@ -185,22 +233,36 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 break;
             }
 
-            self.tm.make(board, *mv);
+            self.tm.make(board, *mv, context.zobrist.as_ref());
             let score = self
-                .negamax(board, depth - 1, control, metrics)
+                .negamax(board, depth - 1, control, metrics, context)
                 .saturating_neg();
             self.tm.unmake(board, *mv);
 
             if score > best_score {
                 best_score = score;
+                best_move = Some(*mv);
+            }
+        }
+
+        if let Some(table) = &mut context.tt {
+            if let Some(best_move) = best_move {
+                let entry = TTEntry {
+                    key: board.hash(),
+                    score: best_score,
+                    best_move,
+                    depth,
+                    flag: TTFlag::Exact,
+                };
+                table.store(entry);
             }
         }
 
         best_score
     }
 
-    pub fn make(&mut self, board: &mut Board, mv: Move) {
-        self.tm.make(board, mv);
+    pub fn make(&mut self, board: &mut Board, mv: Move, context: &mut SearchContext) {
+        self.tm.make(board, mv, context.zobrist.as_ref());
     }
 
     pub fn unmake(&mut self, board: &mut Board, mv: Move) {

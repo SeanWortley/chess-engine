@@ -2,7 +2,7 @@ use crate::{
     Board, Color, Move, MoveGenerator, MoveList, SearchResult, Square, TransitionManager,
     search::{
         LeafPolicy, OrderingPolicy, SearchCore, control::SearchControl, kernel::PureNegamaxKernel,
-        metrics::SearchMetrics,
+        metrics::SearchMetrics, zobrist::SearchContext,
     },
 };
 
@@ -21,6 +21,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
     fn search_at_depth(
         &mut self,
         board: &mut Board,
+        context: &mut SearchContext,
         depth: u8,
         control: &SearchControl,
         metrics: &mut SearchMetrics,
@@ -45,10 +46,10 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 break;
             }
 
-            self.kernel.make(board, *mv);
+                self.kernel.make(board, *mv, context);
             let score = self
                 .kernel
-                .negamax(board, depth.saturating_sub(1), control, metrics)
+                .negamax(board, depth.saturating_sub(1), control, metrics, context)
                 .saturating_neg();
             self.kernel.unmake(board, *mv);
 
@@ -65,7 +66,8 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
     }
 
     fn make(&mut self, board: &mut Board, mv: Move) {
-        self.kernel.make(board, mv);
+        let mut context = SearchContext::without_tt();
+        self.kernel.make(board, mv, &mut context);
     }
 
     fn unmake(&mut self, board: &mut Board, mv: Move) {
