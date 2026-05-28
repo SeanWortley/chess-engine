@@ -1,8 +1,8 @@
 /target
 /tools/sandbox
-*.pgn
+/*.pgn
 # VSCode
 .vscode/
 *.code-workspace
-
+/tmp/*
 build_windows
