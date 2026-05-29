@@ -1,7 +1,11 @@
 use crate::{
     Board, Color, DRAW, IsAttackedFn, Move, MoveGenerator, MoveList, NEG_INF, PieceKind,
     SearchControl, Square, TransitionManager,
-    search::{LeafPolicy, OrderingPolicy, metrics::SearchMetrics, zobrist::{SearchContext, TTEntry, TTFlag}},
+    search::{
+        LeafPolicy, OrderingPolicy,
+        metrics::SearchMetrics,
+        zobrist::{SearchContext, TTEntry, TTFlag},
+    },
 };
 
 pub struct AlphaBetaKernel<
@@ -90,7 +94,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                     TTFlag::Exact => return entry.score,
                     TTFlag::LowerBound if entry.score >= beta => return entry.score,
                     TTFlag::UpperBound if entry.score <= alpha => return entry.score,
-                    _ => {},
+                    _ => {}
                 }
             }
         }
@@ -118,7 +122,6 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             let score = self
                 .alpha_beta(board, -beta, -alpha, depth - 1, control, metrics, context)
                 .saturating_neg();
-            
 
             self.tm.unmake(board, *mv);
 
@@ -134,27 +137,29 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             }
         }
 
-        if let Some(table) = &mut context.tt {
-            if let Some(best_move) = best_move {
-                let flag = if best_score <= original_alpha {
-                    // No move improved alpha; this is an upper bound
-                    TTFlag::UpperBound
-                } else if best_score >= beta {
-                    // Beta cutoff; this is a lower bound
-                    TTFlag::LowerBound
-                } else {
-                    // Move improved alpha but didn't cause cutoff; exact value
-                    TTFlag::Exact
-                };
+        if !control.should_stop(metrics) {
+            if let Some(table) = &mut context.tt {
+                if let Some(best_move) = best_move {
+                    let flag = if best_score <= original_alpha {
+                        // No move improved alpha; this is an upper bound
+                        TTFlag::UpperBound
+                    } else if best_score >= beta {
+                        // Beta cutoff; this is a lower bound
+                        TTFlag::LowerBound
+                    } else {
+                        // Move improved alpha but didn't cause cutoff; exact value
+                        TTFlag::Exact
+                    };
 
-                let entry = TTEntry {
-                    key: board.hash(),
-                    score: best_score,
-                    best_move,
-                    depth,
-                    flag,
-                };
-                table.store(entry);
+                    let entry = TTEntry {
+                        key: board.hash(),
+                        score: best_score,
+                        best_move,
+                        depth,
+                        flag,
+                    };
+                    table.store(entry);
+                }
             }
         }
         best_score
@@ -245,16 +250,18 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             }
         }
 
-        if let Some(table) = &mut context.tt {
-            if let Some(best_move) = best_move {
-                let entry = TTEntry {
-                    key: board.hash(),
-                    score: best_score,
-                    best_move,
-                    depth,
-                    flag: TTFlag::Exact,
-                };
-                table.store(entry);
+        if !control.should_stop(metrics) {
+            if let Some(table) = &mut context.tt {
+                if let Some(best_move) = best_move {
+                    let entry = TTEntry {
+                        key: board.hash(),
+                        score: best_score,
+                        best_move,
+                        depth,
+                        flag: TTFlag::Exact,
+                    };
+                    table.store(entry);
+                }
             }
         }
 

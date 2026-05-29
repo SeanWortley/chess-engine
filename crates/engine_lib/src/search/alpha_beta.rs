@@ -2,8 +2,11 @@ use crate::{
     Board, Color, Move, MoveGenerator, MoveList, NEG_INF, POS_INF, SearchResult, Square,
     TransitionManager,
     search::{
-        LeafPolicy, OrderingPolicy, SearchCore, control::SearchControl, kernel::AlphaBetaKernel,
-        metrics::SearchMetrics, zobrist::SearchContext,
+        LeafPolicy, OrderingPolicy, SearchCore,
+        control::SearchControl,
+        kernel::AlphaBetaKernel,
+        metrics::SearchMetrics,
+        zobrist::{SearchContext, TTEntry, TTFlag},
     },
 };
 
@@ -28,6 +31,17 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         metrics: &mut SearchMetrics,
     ) -> SearchResult {
         metrics.increment();
+
+        if let Some(table) = context.tt.as_ref() {
+            if let Some(entry) = table.probe(board.hash(), depth) {
+                if matches!(entry.flag, TTFlag::Exact) {
+                    return SearchResult {
+                        best_move: Some(entry.best_move),
+                        score: entry.score,
+                    };
+                }
+            }
+        }
 
         let mut moves = MoveList::new();
         self.kernel.generate_moves(board, &mut moves);
@@ -73,6 +87,21 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             }
             if score >= beta {
                 break;
+            }
+        }
+
+        if !control.should_stop(metrics) {
+            if let Some(table) = &mut context.tt {
+                if let Some(best_move) = best_move {
+                    let entry = TTEntry {
+                        key: board.hash(),
+                        score: best_score,
+                        best_move,
+                        depth,
+                        flag: TTFlag::Exact,
+                    };
+                    table.store(entry);
+                }
             }
         }
 

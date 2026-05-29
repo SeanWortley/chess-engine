@@ -1,8 +1,11 @@
 use crate::{
     Board, Color, Move, MoveGenerator, MoveList, SearchResult, Square, TransitionManager,
     search::{
-        LeafPolicy, OrderingPolicy, SearchCore, control::SearchControl, kernel::PureNegamaxKernel,
-        metrics::SearchMetrics, zobrist::SearchContext,
+        LeafPolicy, OrderingPolicy, SearchCore,
+        control::SearchControl,
+        kernel::PureNegamaxKernel,
+        metrics::SearchMetrics,
+        zobrist::{SearchContext, TTEntry, TTFlag},
     },
 };
 
@@ -28,6 +31,15 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
     ) -> SearchResult {
         metrics.increment();
 
+        if let Some(table) = &context.tt {
+            if let Some(entry) = table.probe(board.hash(), depth) {
+                return SearchResult {
+                    best_move: Some(entry.best_move),
+                    score: entry.score,
+                };
+            }
+        }
+
         let mut moves = MoveList::new();
         self.kernel.generate_moves(board, &mut moves);
 
@@ -46,7 +58,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 break;
             }
 
-                self.kernel.make(board, *mv, context);
+            self.kernel.make(board, *mv, context);
             let score = self
                 .kernel
                 .negamax(board, depth.saturating_sub(1), control, metrics, context)
@@ -56,6 +68,21 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             if score > best_score {
                 best_score = score;
                 best_move = Some(*mv);
+            }
+        }
+
+        if !control.should_stop(metrics) {
+            if let Some(table) = &mut context.tt {
+                if let Some(best_move) = best_move {
+                    let entry = TTEntry {
+                        key: board.hash(),
+                        score: best_score,
+                        best_move,
+                        depth,
+                        flag: TTFlag::Exact,
+                    };
+                    table.store(entry);
+                }
             }
         }
 
