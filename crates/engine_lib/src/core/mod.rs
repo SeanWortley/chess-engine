@@ -4,6 +4,7 @@ pub mod direction;
 pub mod move_list;
 pub mod moves;
 pub mod square;
+pub mod zobrist;
 
 pub use bitboard::Bitboard;
 pub use board::{Board, CastlingRights, Color, Piece, PieceKind};

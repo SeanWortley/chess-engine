@@ -1,6 +1,6 @@
 use super::{Bitboard, Move, MoveKind, Square};
+use crate::core::zobrist::ZOBRIST;
 use std::fmt;
-use crate::search::zobrist::ZobristTable;
 
 // Clone is for naive copy-make move gen
 
@@ -138,6 +138,9 @@ impl Board {
         self.castling
     }
 
+    pub fn halfmove_clock(&self) -> u8 {
+        self.halfmove_clock
+    }
     pub fn hash(&self) -> u64 {
         self.hash
     }
@@ -151,7 +154,10 @@ impl Board {
     }
 
     // To Do: Add error passing on invalid move, should make perft debugging easier :)
-    pub fn apply(&mut self, mv: Move, zobrist: Option<&ZobristTable>) {
+    pub fn apply(&mut self, mv: Move) {
+        // Toggle side to move
+        self.xor(ZOBRIST.side_to_move);
+
         let origin = mv.origin();
         let destination = mv.destination();
         let move_kind = mv.kind();
@@ -161,11 +167,9 @@ impl Board {
         );
         let is_double_pawn_push = move_kind == MoveKind::DoublePawnPush;
 
-        if let Some(z) = zobrist {
-            // XOR out old en passant if it exists
-            if let Some(ep_square) = self.en_passant {
-                self.xor(z.en_passant[ep_square.file() as usize]);
-            }
+        // XOR out old en passant if it exists
+        if let Some(ep_square) = self.en_passant {
+            self.xor(ZOBRIST.en_passant[ep_square.file() as usize]);
         }
 
         let piece = self.set_piece(None, origin);
@@ -175,9 +179,10 @@ impl Board {
         let moving_piece = piece.expect("This should never happen");
 
         // XOR out piece leaving origin
-        if let Some(z) = zobrist {
-            self.xor(z.pieces[moving_piece.color as usize][moving_piece.kind as usize][origin.index() as usize]);
-        }
+        self.xor(
+            ZOBRIST.pieces[moving_piece.color as usize][moving_piece.kind as usize]
+                [origin.index() as usize],
+        );
 
         let captured_piece = if is_capture {
             if move_kind == MoveKind::EnPassantCapture {
@@ -193,7 +198,7 @@ impl Board {
         };
 
         // XOR out captured piece if any
-        if let (Some(z), Some(captured)) = (zobrist, captured_piece) {
+        if let Some(captured) = captured_piece {
             let captured_square = if move_kind == MoveKind::EnPassantCapture {
                 // For en passant, piece is on different square
                 if self.to_move == Color::White {
@@ -204,7 +209,10 @@ impl Board {
             } else {
                 destination
             };
-            self.xor(z.pieces[captured.color as usize][captured.kind as usize][captured_square.index() as usize]);
+            self.xor(
+                ZOBRIST.pieces[captured.color as usize][captured.kind as usize]
+                    [captured_square.index() as usize],
+            );
         }
 
         match move_kind {
@@ -230,25 +238,29 @@ impl Board {
                 };
                 if self.to_move == Color::White {
                     // XOR out rook leaving H1
-                    if let Some(z) = zobrist {
-                        self.xor(z.pieces[Color::White as usize][PieceKind::Rook as usize][Square::H1.index() as usize]);
-                    }
+                    self.xor(
+                        ZOBRIST.pieces[Color::White as usize][PieceKind::Rook as usize]
+                            [Square::H1.index() as usize],
+                    );
                     self.set_piece(Some(other), Square::F1);
                     // XOR in rook at F1
-                    if let Some(z) = zobrist {
-                        self.xor(z.pieces[Color::White as usize][PieceKind::Rook as usize][Square::F1.index() as usize]);
-                    }
+                    self.xor(
+                        ZOBRIST.pieces[Color::White as usize][PieceKind::Rook as usize]
+                            [Square::F1.index() as usize],
+                    );
                     self.set_piece(None, Square::H1);
                 } else {
                     // XOR out rook leaving H8
-                    if let Some(z) = zobrist {
-                        self.xor(z.pieces[Color::Black as usize][PieceKind::Rook as usize][Square::H8.index() as usize]);
-                    }
+                    self.xor(
+                        ZOBRIST.pieces[Color::Black as usize][PieceKind::Rook as usize]
+                            [Square::H8.index() as usize],
+                    );
                     self.set_piece(Some(other), Square::F8);
                     // XOR in rook at F8
-                    if let Some(z) = zobrist {
-                        self.xor(z.pieces[Color::Black as usize][PieceKind::Rook as usize][Square::F8.index() as usize]);
-                    }
+                    self.xor(
+                        ZOBRIST.pieces[Color::Black as usize][PieceKind::Rook as usize]
+                            [Square::F8.index() as usize],
+                    );
                     self.set_piece(None, Square::H8);
                 }
             }
@@ -260,25 +272,29 @@ impl Board {
                 };
                 if self.to_move == Color::White {
                     // XOR out rook leaving A1
-                    if let Some(z) = zobrist {
-                        self.xor(z.pieces[Color::White as usize][PieceKind::Rook as usize][Square::A1.index() as usize]);
-                    }
+                    self.xor(
+                        ZOBRIST.pieces[Color::White as usize][PieceKind::Rook as usize]
+                            [Square::A1.index() as usize],
+                    );
                     self.set_piece(Some(other), Square::D1);
                     // XOR in rook at D1
-                    if let Some(z) = zobrist {
-                        self.xor(z.pieces[Color::White as usize][PieceKind::Rook as usize][Square::D1.index() as usize]);
-                    }
+                    self.xor(
+                        ZOBRIST.pieces[Color::White as usize][PieceKind::Rook as usize]
+                            [Square::D1.index() as usize],
+                    );
                     self.set_piece(None, Square::A1);
                 } else {
                     // XOR out rook leaving A8
-                    if let Some(z) = zobrist {
-                        self.xor(z.pieces[Color::Black as usize][PieceKind::Rook as usize][Square::A8.index() as usize]);
-                    }
+                    self.xor(
+                        ZOBRIST.pieces[Color::Black as usize][PieceKind::Rook as usize]
+                            [Square::A8.index() as usize],
+                    );
                     self.set_piece(Some(other), Square::D8);
                     // XOR in rook at D8
-                    if let Some(z) = zobrist {
-                        self.xor(z.pieces[Color::Black as usize][PieceKind::Rook as usize][Square::D8.index() as usize]);
-                    }
+                    self.xor(
+                        ZOBRIST.pieces[Color::Black as usize][PieceKind::Rook as usize]
+                            [Square::D8.index() as usize],
+                    );
                     self.set_piece(None, Square::A8);
                 }
             }
@@ -301,9 +317,10 @@ impl Board {
                 };
                 // XOR out pawn that was already removed from origin
                 // XOR in promoted piece at destination
-                if let Some(z) = zobrist {
-                    self.xor(z.pieces[self.to_move as usize][kind as usize][destination.index() as usize]);
-                }
+                self.xor(
+                    ZOBRIST.pieces[self.to_move as usize][kind as usize]
+                        [destination.index() as usize],
+                );
                 self.set_piece(Some(promoted_to), destination);
             }
             MoveKind::PromotionCapture(kind) => {
@@ -312,29 +329,25 @@ impl Board {
                     kind,
                 };
                 // XOR in promoted piece at destination
-                if let Some(z) = zobrist {
-                    self.xor(z.pieces[self.to_move as usize][kind as usize][destination.index() as usize]);
-                }
+                self.xor(
+                    ZOBRIST.pieces[self.to_move as usize][kind as usize]
+                        [destination.index() as usize],
+                );
                 self.set_piece(Some(promoted_to), destination);
             }
         }
 
         // XOR in piece arriving at destination for non-promotion moves
-        if let Some(z) = zobrist {
-            match move_kind {
-                MoveKind::Promotion(_) | MoveKind::PromotionCapture(_) => {
-                    // Already handled above
-                }
-                MoveKind::KingCastle | MoveKind::QueenCastle => {
-                    // King already handled above, rook handled in match arm
-                }
-                MoveKind::EnPassantCapture => {
-                    // Pawn already handled above
-                }
-                _ => {
-                    // All other moves: XOR in piece at destination
-                    self.xor(z.pieces[moving_piece.color as usize][moving_piece.kind as usize][destination.index() as usize]);
-                }
+        match move_kind {
+            MoveKind::Promotion(_) | MoveKind::PromotionCapture(_) => {
+                // Already handled above
+            }
+            _ => {
+                // All other moves: XOR in piece at destination
+                self.xor(
+                    ZOBRIST.pieces[moving_piece.color as usize][moving_piece.kind as usize]
+                        [destination.index() as usize],
+                );
             }
         }
 
@@ -362,20 +375,18 @@ impl Board {
         }
 
         // XOR castling rights changes
-        if let Some(z) = zobrist {
-            let castling_xor = old_castling ^ self.castling.0;
-            if (castling_xor & CastlingRights::WHITE_KINGSIDE) != 0 {
-                self.xor(z.castling_rights[0]);
-            }
-            if (castling_xor & CastlingRights::WHITE_QUEENSIDE) != 0 {
-                self.xor(z.castling_rights[1]);
-            }
-            if (castling_xor & CastlingRights::BLACK_KINGSIDE) != 0 {
-                self.xor(z.castling_rights[2]);
-            }
-            if (castling_xor & CastlingRights::BLACK_QUEENSIDE) != 0 {
-                self.xor(z.castling_rights[3]);
-            }
+        let castling_xor = old_castling ^ self.castling.0;
+        if (castling_xor & CastlingRights::WHITE_KINGSIDE) != 0 {
+            self.xor(ZOBRIST.castling_rights[0]);
+        }
+        if (castling_xor & CastlingRights::WHITE_QUEENSIDE) != 0 {
+            self.xor(ZOBRIST.castling_rights[1]);
+        }
+        if (castling_xor & CastlingRights::BLACK_KINGSIDE) != 0 {
+            self.xor(ZOBRIST.castling_rights[2]);
+        }
+        if (castling_xor & CastlingRights::BLACK_QUEENSIDE) != 0 {
+            self.xor(ZOBRIST.castling_rights[3]);
         }
 
         // Update halfmove
@@ -396,15 +407,10 @@ impl Board {
         }
 
         // XOR in new en passant if this was a double pawn push
-        if let Some(z) = zobrist {
-            if is_double_pawn_push {
-                if let Some(ep_square) = self.en_passant {
-                    self.xor(z.en_passant[ep_square.file() as usize]);
-                }
+        if is_double_pawn_push {
+            if let Some(ep_square) = self.en_passant {
+                self.xor(ZOBRIST.en_passant[ep_square.file() as usize]);
             }
-
-            // Toggle side to move
-            self.xor(z.side_to_move);
         }
 
         // Update to_move
@@ -467,6 +473,7 @@ impl Board {
             .parse()
             .expect("Invalid fullmove counter");
 
+        board.hash = ZOBRIST.compute_from_scratch(&board);
         board
     }
 
@@ -799,7 +806,7 @@ mod tests {
     fn test_apply() {
         let mut board = Board::starting_position();
 
-        board.apply(Move::quiet(idx("g1"), idx("f3")), None);
+        board.apply(Move::quiet(idx("g1"), idx("f3")));
 
         assert_eq!(
             board.get_piece(Square::from_name("f3")),
@@ -854,5 +861,103 @@ mod tests {
             .to_fen_char(),
             'k'
         );
+    }
+
+    // ---- Zobrist hash invariance ----
+    // Each test asserts that the incrementally maintained hash matches a
+    // from-scratch recompute after every ply. A failure means apply() is
+    // missing (or double-applying) a XOR for that move kind.
+
+    fn assert_hash_synced(board: &Board) {
+        assert_eq!(
+            board.hash(),
+            ZOBRIST.compute_from_scratch(board),
+            "incremental hash drifted out of sync with compute_from_scratch"
+        );
+    }
+
+    fn apply_synced(board: &mut Board, mv: Move) {
+        board.apply(mv);
+        assert_hash_synced(board);
+    }
+
+    #[test]
+    fn test_hash_initialized_by_from_fen() {
+        let board = Board::starting_position();
+        assert_ne!(board.hash(), 0);
+        assert_hash_synced(&board);
+    }
+
+    #[test]
+    fn test_hash_sync_quiet_and_double_push() {
+        let mut board = Board::starting_position();
+        apply_synced(&mut board, Move::double_pawn_push(idx("e2"), idx("e4"))); // sets EP file
+        apply_synced(&mut board, Move::double_pawn_push(idx("e7"), idx("e5"))); // swaps EP file
+        apply_synced(&mut board, Move::quiet(idx("g1"), idx("f3"))); // clears EP
+        apply_synced(&mut board, Move::quiet(idx("b8"), idx("c6")));
+    }
+
+    #[test]
+    fn test_hash_sync_en_passant() {
+        let mut board = Board::starting_position();
+        apply_synced(&mut board, Move::double_pawn_push(idx("e2"), idx("e4")));
+        apply_synced(&mut board, Move::quiet(idx("a7"), idx("a6")));
+        apply_synced(&mut board, Move::quiet(idx("e4"), idx("e5")));
+        apply_synced(&mut board, Move::double_pawn_push(idx("d7"), idx("d5")));
+        apply_synced(&mut board, Move::en_passant(idx("e5"), idx("d6")));
+    }
+
+    #[test]
+    fn test_hash_sync_kingside_castles() {
+        let mut board =
+            Board::from_fen("rnbqk2r/pppp1ppp/5n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4");
+        assert_hash_synced(&board);
+        apply_synced(&mut board, Move::king_castle(idx("e1"), idx("g1")));
+        apply_synced(&mut board, Move::king_castle(idx("e8"), idx("g8")));
+    }
+
+    #[test]
+    fn test_hash_sync_queenside_castles() {
+        let mut board =
+            Board::from_fen("r3kbnr/pppqpppp/2npb3/8/8/2NPB3/PPPQPPPP/R3KBNR w KQkq - 6 6");
+        assert_hash_synced(&board);
+        apply_synced(&mut board, Move::queen_castle(idx("e1"), idx("c1")));
+        apply_synced(&mut board, Move::queen_castle(idx("e8"), idx("c8")));
+    }
+
+    #[test]
+    fn test_hash_sync_promotions() {
+        let mut board = Board::from_fen("8/P3k3/8/8/8/8/4K1p1/8 w - - 0 1");
+        assert_hash_synced(&board);
+        apply_synced(
+            &mut board,
+            Move::promotion(idx("a7"), idx("a8"), PieceKind::Queen),
+        );
+        apply_synced(
+            &mut board,
+            Move::promotion(idx("g2"), idx("g1"), PieceKind::Knight),
+        );
+    }
+
+    #[test]
+    fn test_hash_sync_promotion_captures() {
+        let mut board = Board::from_fen("1n2k3/P7/8/8/8/8/6p1/4K1NR w - - 0 1");
+        assert_hash_synced(&board);
+        apply_synced(
+            &mut board,
+            Move::promotion_capture(idx("a7"), idx("b8"), PieceKind::Queen),
+        );
+        apply_synced(
+            &mut board,
+            Move::promotion_capture(idx("g2"), idx("h1"), PieceKind::Queen),
+        );
+    }
+
+    #[test]
+    fn test_hash_sync_rights_revoking_rook_captures() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        assert_hash_synced(&board);
+        apply_synced(&mut board, Move::capture(idx("a1"), idx("a8"))); // kills both queenside rights
+        apply_synced(&mut board, Move::capture(idx("h8"), idx("h1"))); // kills both kingside rights
     }
 }

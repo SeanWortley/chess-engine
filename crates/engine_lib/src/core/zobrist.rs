@@ -1,101 +1,14 @@
 use crate::Board;
 use crate::CastlingRights;
 use crate::Color;
-use crate::Move;
 use crate::Square;
 use rand::Rng;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
+use std::sync::LazyLock;
 
 pub const SEED: u64 = 1234;
-
-pub struct SearchContext {
-    pub tt: Option<TranspositionTable>,
-    pub zobrist: Option<ZobristTable>,
-}
-
-impl SearchContext {
-    pub fn with_tt(size_mb: usize) -> Self {
-        SearchContext {
-            tt: Some(TranspositionTable::new(size_mb)),
-            zobrist: Some(ZobristTable::new()),
-        }
-    }
-
-    pub fn without_tt() -> Self {
-        SearchContext {
-            tt: None,
-            zobrist: None,
-        }
-    }
-}
-
-pub struct TranspositionTable {
-    entries: Vec<Option<TTEntry>>, // This will be heap regardless, so might as well use a vec
-    size: usize,
-}
-
-impl TranspositionTable {
-    pub fn new(size_mb: usize) -> Self {
-        let size = (size_mb * 1024 * 1024) / std::mem::size_of::<Option<TTEntry>>();
-        let size = size.next_power_of_two();
-        let entries: Vec<Option<TTEntry>> = vec![None; size];
-        Self { entries, size }
-    }
-
-    fn index(&self, hash: u64) -> usize {
-        (hash as usize) & (self.size - 1) // Bitwise AND - SUPA FAST 
-    }
-
-    pub fn probe(&self, hash: u64, depth: u8) -> Option<&TTEntry> {
-        let entry = self.entries[self.index(hash)].as_ref();
-        match entry {
-            Some(entry) => {
-                if entry.key == hash && entry.depth >= depth {
-                    Some(entry)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        }
-    }
-
-    pub fn probe_move(&self, hash: u64) -> Option<Move> {
-        let entry = self.entries[self.index(hash)].as_ref();
-        match entry {
-            Some(entry) => {
-                if entry.key == hash {
-                    Some(entry.best_move)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        }
-    }
-
-    pub fn store(&mut self, entry: TTEntry) {
-        let idx = self.index(entry.key);
-        self.entries[idx] = Some(entry);
-    }
-}
-
-#[derive(Clone)]
-pub struct TTEntry {
-    pub key: u64, // hash
-    pub score: i16,
-    pub best_move: Move,
-    pub depth: u8,
-    pub flag: TTFlag,
-}
-
-#[derive(Clone)]
-pub enum TTFlag {
-    Exact,
-    LowerBound,
-    UpperBound,
-}
+pub static ZOBRIST: LazyLock<ZobristTable> = LazyLock::new(ZobristTable::new);
 
 pub struct ZobristTable {
     pub pieces: [[[u64; 64]; 6]; 2], // Index with [piece_color][piece_kind][square]

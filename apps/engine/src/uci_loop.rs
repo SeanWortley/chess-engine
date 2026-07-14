@@ -216,7 +216,7 @@ where
                         }
                     }
 
-                    board.apply(mv, None);
+                    board.apply(mv);
                 }
             }
             UciCommand::Go {

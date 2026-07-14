@@ -5,7 +5,7 @@ use crate::{
         control::SearchControl,
         kernel::PureNegamaxKernel,
         metrics::SearchMetrics,
-        zobrist::{SearchContext, TTEntry, TTFlag},
+        tt::{SearchContext, TTEntry, TTFlag},
     },
 };
 
@@ -58,7 +58,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 break;
             }
 
-            self.kernel.make(board, *mv, context);
+            self.kernel.make(board, *mv);
             let score = self
                 .kernel
                 .negamax(board, depth.saturating_sub(1), control, metrics, context)
@@ -93,8 +93,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
     }
 
     fn make(&mut self, board: &mut Board, mv: Move) {
-        let mut context = SearchContext::without_tt();
-        self.kernel.make(board, mv, &mut context);
+        self.kernel.make(board, mv);
     }
 
     fn unmake(&mut self, board: &mut Board, mv: Move) {

@@ -4,7 +4,7 @@ use crate::{
     search::{
         LeafPolicy, OrderingPolicy,
         metrics::SearchMetrics,
-        zobrist::{SearchContext, TTEntry, TTFlag},
+        tt::{SearchContext, TTEntry, TTFlag},
     },
 };
 
@@ -118,7 +118,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 break;
             }
 
-            self.tm.make(board, *mv, context.zobrist.as_ref());
+            self.tm.make(board, *mv);
             let score = self
                 .alpha_beta(board, -beta, -alpha, depth - 1, control, metrics, context)
                 .saturating_neg();
@@ -165,8 +165,8 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         best_score
     }
 
-    pub fn make(&mut self, board: &mut Board, mv: Move, context: &mut SearchContext) {
-        self.tm.make(board, mv, context.zobrist.as_ref());
+    pub fn make(&mut self, board: &mut Board, mv: Move) {
+        self.tm.make(board, mv);
     }
 
     pub fn unmake(&mut self, board: &mut Board, mv: Move) {
@@ -238,7 +238,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 break;
             }
 
-            self.tm.make(board, *mv, context.zobrist.as_ref());
+            self.tm.make(board, *mv);
             let score = self
                 .negamax(board, depth - 1, control, metrics, context)
                 .saturating_neg();
@@ -268,8 +268,8 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         best_score
     }
 
-    pub fn make(&mut self, board: &mut Board, mv: Move, context: &mut SearchContext) {
-        self.tm.make(board, mv, context.zobrist.as_ref());
+    pub fn make(&mut self, board: &mut Board, mv: Move) {
+        self.tm.make(board, mv);
     }
 
     pub fn unmake(&mut self, board: &mut Board, mv: Move) {

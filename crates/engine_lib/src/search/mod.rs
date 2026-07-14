@@ -1,6 +1,6 @@
 use crate::search::control::{SearchConstraint, SearchControl};
 use crate::search::metrics::SearchMetrics;
-use crate::search::zobrist::SearchContext;
+use crate::search::tt::SearchContext;
 use crate::{Board, Move, MoveList};
 
 pub mod alpha_beta;
@@ -12,7 +12,7 @@ pub mod mvv_lva;
 pub mod negamax;
 pub mod no_ordering;
 pub mod static_leaf;
-pub mod zobrist;
+pub mod tt;
 
 pub use driver::SearchDriver;
 pub use negamax::PureNegamaxSearcher;

@@ -1,10 +1,11 @@
 use crate::{
     Board, Move, SearchResult,
+    core::zobrist::ZOBRIST,
     search::{
         SearchCore, SearchReporter, Searcher,
         control::{SearchConstraint, SearchControl},
         metrics::SearchMetrics,
-        zobrist::{SearchContext, TranspositionTable, ZobristTable},
+        tt::{SearchContext, TranspositionTable},
     },
 };
 
@@ -36,12 +37,12 @@ impl<S: SearchCore> SearchDriver<S> {
                 match tt_mode {
                     TTMode::WithTT => SearchContext {
                         tt: Some(TranspositionTable::new(DEFAULT_TT_SIZE)),
-                        zobrist: Some(ZobristTable::new()),
+                        history: Vec::new(),
                     },
 
                     TTMode::WithoutTT => SearchContext {
                         tt: None,
-                        zobrist: None,
+                        history: Vec::new(),
                     },
                 }
             },
@@ -82,9 +83,7 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
     ) -> SearchResult {
         let mut metrics = SearchMetrics::new();
 
-        if let Some(zobrist) = &self.context.zobrist {
-            board.set_hash(zobrist.compute_from_scratch(board));
-        }
+        assert_eq!(board.hash(), ZOBRIST.compute_from_scratch(board));
 
         let requested_depth_limit = match constraint.max_depth {
             Some(depth) => depth,
