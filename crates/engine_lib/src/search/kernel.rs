@@ -4,7 +4,7 @@ use crate::{
     search::{
         LeafPolicy, OrderingPolicy,
         metrics::SearchMetrics,
-        tt::{SearchContext, TTEntry, TTFlag},
+        tt::{SearchContext, TTEntry, TTFlag, from_tt_score, to_tt_score},
     },
 };
 
@@ -34,7 +34,7 @@ pub struct PureNegamaxKernel<
     attacked_fn: IsAttackedFn,
 }
 
-fn terminal_score_if_no_moves(board: &Board, attacked_fn: IsAttackedFn) -> i16 {
+fn terminal_score_if_no_moves(board: &Board, root_distance: u8, attacked_fn: IsAttackedFn) -> i16 {
     let king_square = Square::from_index(
         board
             .bitboard(board.to_move(), PieceKind::King)
@@ -42,7 +42,14 @@ fn terminal_score_if_no_moves(board: &Board, attacked_fn: IsAttackedFn) -> i16 {
             .unwrap(),
     );
     let king_check = attacked_fn(board, king_square, board.to_move().opponent());
-    if king_check { NEG_INF } else { DRAW }
+    if king_check {
+        // Being mated further from the root is less bad: -29_999 is mate at
+        // ply 1, -29_997 mate at ply 3. Negation up the tree makes the root
+        // prefer the fastest mate and the defender the slowest.
+        NEG_INF + root_distance as i16
+    } else {
+        DRAW
+    }
 }
 
 impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolicy>
@@ -68,8 +75,8 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         self.mg.generate_moves(board, moves);
     }
 
-    pub fn terminal_score_if_no_moves(&self, board: &Board) -> i16 {
-        terminal_score_if_no_moves(board, self.attacked_fn)
+    pub fn terminal_score_if_no_moves(&self, board: &Board, root_distance: u8) -> i16 {
+        terminal_score_if_no_moves(board, root_distance, self.attacked_fn)
     }
 
     pub fn alpha_beta(
@@ -78,11 +85,16 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         alpha: i16,
         beta: i16,
         depth: u8,
+        root_distance: u8,
         control: &SearchControl,
         metrics: &mut SearchMetrics,
         context: &mut SearchContext,
     ) -> i16 {
         metrics.increment();
+
+        if context.is_draw_by_rule(board) {
+            return DRAW;
+        }
 
         if depth == 0 {
             return self.lp.evaluate_leaf(board, alpha, beta);
@@ -91,9 +103,13 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         if let Some(table) = &context.tt {
             if let Some(entry) = table.probe(board.hash(), depth) {
                 match entry.flag {
-                    TTFlag::Exact => return entry.score,
-                    TTFlag::LowerBound if entry.score >= beta => return entry.score,
-                    TTFlag::UpperBound if entry.score <= alpha => return entry.score,
+                    TTFlag::Exact => return from_tt_score(entry.score, root_distance),
+                    TTFlag::LowerBound if entry.score >= beta => {
+                        return from_tt_score(entry.score, root_distance);
+                    }
+                    TTFlag::UpperBound if entry.score <= alpha => {
+                        return from_tt_score(entry.score, root_distance);
+                    }
                     _ => {}
                 }
             }
@@ -110,7 +126,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
         // Check for checkmate or stalemate
         if moves.is_empty() {
-            best_score = self.terminal_score_if_no_moves(board);
+            best_score = self.terminal_score_if_no_moves(board, root_distance);
         }
 
         for mv in moves.iter() {
@@ -119,10 +135,21 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             }
 
             self.tm.make(board, *mv);
+            context.history.push(board.hash());
             let score = self
-                .alpha_beta(board, -beta, -alpha, depth - 1, control, metrics, context)
+                .alpha_beta(
+                    board,
+                    -beta,
+                    -alpha,
+                    depth - 1,
+                    root_distance + 1,
+                    control,
+                    metrics,
+                    context,
+                )
                 .saturating_neg();
 
+            context.history.pop();
             self.tm.unmake(board, *mv);
 
             if score > best_score {
@@ -153,7 +180,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
                     let entry = TTEntry {
                         key: board.hash(),
-                        score: best_score,
+                        score: to_tt_score(best_score, root_distance),
                         best_move,
                         depth,
                         flag,
@@ -197,19 +224,24 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         self.mg.generate_moves(board, moves);
     }
 
-    pub fn terminal_score_if_no_moves(&self, board: &Board) -> i16 {
-        terminal_score_if_no_moves(board, self.attacked_fn)
+    pub fn terminal_score_if_no_moves(&self, board: &Board, root_distance: u8) -> i16 {
+        terminal_score_if_no_moves(board, root_distance, self.attacked_fn)
     }
 
     pub fn negamax(
         &mut self,
         board: &mut Board,
         depth: u8,
+        root_distance: u8,
         control: &SearchControl,
         metrics: &mut SearchMetrics,
         context: &mut SearchContext,
     ) -> i16 {
         metrics.increment();
+
+        if context.is_draw_by_rule(board) {
+            return DRAW;
+        }
 
         if depth == 0 {
             return self.lp.evaluate_leaf(board, NEG_INF, i16::MAX);
@@ -217,7 +249,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
         if let Some(table) = &context.tt {
             if let Some(entry) = table.probe(board.hash(), depth) {
-                return entry.score;
+                return from_tt_score(entry.score, root_distance);
             }
         }
 
@@ -230,7 +262,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
         // Check for checkmate or stalemate.
         if moves.is_empty() {
-            best_score = self.terminal_score_if_no_moves(board);
+            best_score = self.terminal_score_if_no_moves(board, root_distance);
         }
 
         for mv in moves.iter() {
@@ -239,9 +271,19 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             }
 
             self.tm.make(board, *mv);
+            context.history.push(board.hash());
             let score = self
-                .negamax(board, depth - 1, control, metrics, context)
+                .negamax(
+                    board,
+                    depth - 1,
+                    root_distance + 1,
+                    control,
+                    metrics,
+                    context,
+                )
                 .saturating_neg();
+
+            context.history.pop();
             self.tm.unmake(board, *mv);
 
             if score > best_score {
@@ -255,7 +297,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 if let Some(best_move) = best_move {
                     let entry = TTEntry {
                         key: board.hash(),
-                        score: best_score,
+                        score: to_tt_score(best_score, root_distance),
                         best_move,
                         depth,
                         flag: TTFlag::Exact,

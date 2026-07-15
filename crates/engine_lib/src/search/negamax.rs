@@ -5,7 +5,7 @@ use crate::{
         control::SearchControl,
         kernel::PureNegamaxKernel,
         metrics::SearchMetrics,
-        tt::{SearchContext, TTEntry, TTFlag},
+        tt::{SearchContext, TTEntry, TTFlag, from_tt_score, to_tt_score},
     },
 };
 
@@ -35,7 +35,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             if let Some(entry) = table.probe(board.hash(), depth) {
                 return SearchResult {
                     best_move: Some(entry.best_move),
-                    score: entry.score,
+                    score: from_tt_score(entry.score, 0),
                 };
             }
         }
@@ -46,7 +46,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         if moves.is_empty() {
             return SearchResult {
                 best_move: None,
-                score: self.kernel.terminal_score_if_no_moves(board),
+                score: self.kernel.terminal_score_if_no_moves(board, 0),
             };
         }
 
@@ -59,10 +59,12 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             }
 
             self.kernel.make(board, *mv);
+            context.history.push(board.hash());
             let score = self
                 .kernel
-                .negamax(board, depth.saturating_sub(1), control, metrics, context)
+                .negamax(board, depth.saturating_sub(1), 1, control, metrics, context)
                 .saturating_neg();
+            context.history.pop();
             self.kernel.unmake(board, *mv);
 
             if score > best_score {
@@ -76,7 +78,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 if let Some(best_move) = best_move {
                     let entry = TTEntry {
                         key: board.hash(),
-                        score: best_score,
+                        score: to_tt_score(best_score, 0),
                         best_move,
                         depth,
                         flag: TTFlag::Exact,

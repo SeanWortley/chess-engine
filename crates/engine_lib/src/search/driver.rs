@@ -77,6 +77,7 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
     fn start_search(
         &mut self,
         board: &mut Board,
+        game_history: &[u64],
         constraint: SearchConstraint,
         control: &SearchControl,
         reporter: &dyn SearchReporter,
@@ -84,6 +85,14 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
         let mut metrics = SearchMetrics::new();
 
         assert_eq!(board.hash(), ZOBRIST.compute_from_scratch(board));
+
+        self.context.history.clear();
+        self.context.history.extend_from_slice(game_history);
+        // Convention: history always ends with the current (root) position.
+        // Covers callers that pass an empty or root-less history.
+        if self.context.history.last() != Some(&board.hash()) {
+            self.context.history.push(board.hash());
+        }
 
         let requested_depth_limit = match constraint.max_depth {
             Some(depth) => depth,

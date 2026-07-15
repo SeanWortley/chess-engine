@@ -1,4 +1,28 @@
-use crate::{Board, Move};
+use crate::{Board, Move, eval::MATE_THRESHOLD};
+
+pub fn to_tt_score(score: i16, root_distance: u8) -> i16 {
+    if score >= MATE_THRESHOLD {
+        return score + root_distance as i16;
+    }
+
+    if score <= -MATE_THRESHOLD {
+        return score - root_distance as i16;
+    }
+
+    score
+}
+
+pub fn from_tt_score(score: i16, root_distance: u8) -> i16 {
+    if score >= MATE_THRESHOLD {
+        return score - root_distance as i16;
+    }
+
+    if score <= -MATE_THRESHOLD {
+        return score + root_distance as i16;
+    }
+
+    score
+}
 
 pub struct SearchContext {
     pub tt: Option<TranspositionTable>,
@@ -172,5 +196,23 @@ mod tests {
 
         let board = board_with_clock(99);
         assert!(!context(vec![board.hash()]).is_draw_by_rule(&board));
+    }
+
+    #[test]
+    fn test_tt_score_frame_conversion() {
+        // Node at ply 3 sees mate at root-ply 7 (score 29_993). Stored
+        // node-relative it must say "mate 4 plies from here" (29_996), and a
+        // different path probing at ply 5 must read mate at root-ply 9.
+        let stored = to_tt_score(29_993, 3);
+        assert_eq!(stored, 29_996);
+        assert_eq!(from_tt_score(stored, 5), 29_991);
+
+        // Mirror for the losing side
+        assert_eq!(from_tt_score(to_tt_score(-29_993, 3), 5), -29_991);
+
+        // Ordinary scores pass through untouched
+        assert_eq!(to_tt_score(150, 7), 150);
+        assert_eq!(from_tt_score(-150, 7), -150);
+        assert_eq!(from_tt_score(to_tt_score(0, 9), 9), 0);
     }
 }

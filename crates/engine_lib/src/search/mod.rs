@@ -37,9 +37,12 @@ pub struct SearchResult {
 }
 
 pub trait Searcher {
+    /// `game_history` holds the zobrist hash of every position the game has
+    /// visited, oldest first, ending with the current (root) position.
     fn start_search(
         &mut self,
         board: &mut Board,
+        game_history: &[u64],
         constraint: SearchConstraint,
         control: &SearchControl,
         reporter: &dyn SearchReporter,

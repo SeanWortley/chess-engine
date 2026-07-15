@@ -6,7 +6,7 @@ use crate::{
         control::SearchControl,
         kernel::AlphaBetaKernel,
         metrics::SearchMetrics,
-        tt::{SearchContext, TTEntry, TTFlag},
+        tt::{SearchContext, TTEntry, TTFlag, from_tt_score, to_tt_score},
     },
 };
 
@@ -37,7 +37,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 if matches!(entry.flag, TTFlag::Exact) {
                     return SearchResult {
                         best_move: Some(entry.best_move),
-                        score: entry.score,
+                        score: from_tt_score(entry.score, 0),
                     };
                 }
             }
@@ -49,7 +49,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         if moves.is_empty() {
             return SearchResult {
                 best_move: None,
-                score: self.kernel.terminal_score_if_no_moves(board),
+                score: self.kernel.terminal_score_if_no_moves(board, 0),
             };
         }
 
@@ -64,6 +64,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
             }
 
             self.kernel.make(board, *mv);
+            context.history.push(board.hash());
             let score = self
                 .kernel
                 .alpha_beta(
@@ -71,11 +72,13 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                     -beta,
                     -alpha,
                     depth.saturating_sub(1),
+                    1,
                     control,
                     metrics,
                     context,
                 )
                 .saturating_neg();
+            context.history.pop();
             self.kernel.unmake(board, *mv);
 
             if score > best_score {
@@ -95,7 +98,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 if let Some(best_move) = best_move {
                     let entry = TTEntry {
                         key: board.hash(),
-                        score: best_score,
+                        score: to_tt_score(best_score, 0),
                         best_move,
                         depth,
                         flag: TTFlag::Exact,
@@ -133,5 +136,46 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         let kernel = AlphaBetaKernel::new(tm, mg, lp, op, attacked_fn);
 
         Self { kernel }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        CopyMakeTransition, NaiveMoveGenerator, POS_INF,
+        eval::pesto::PestoEvaluator,
+        move_gen::attacks::ray_is_attacked,
+        search::{
+            control::SearchConstraint, metrics::SearchMetrics, mvv_lva::MvvLva,
+            static_leaf::StaticLeaf,
+        },
+    };
+
+    #[test]
+    fn test_picks_fastest_mate() {
+        // Back rank: Ra8# is mate in 1; slower rook mates also exist.
+        let mut board = Board::from_fen("6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1");
+
+        let mut searcher = AlphaBetaSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            StaticLeaf::new(PestoEvaluator::new()),
+            MvvLva {},
+            ray_is_attacked,
+        );
+        let mut context = SearchContext::with_tt(16);
+        context.history.push(board.hash());
+        let control = SearchControl::new(SearchConstraint::fixed_depth(4));
+        let mut metrics = SearchMetrics::new();
+
+        let result = searcher.search_at_depth(&mut board, &mut context, 4, &control, &mut metrics);
+
+        // Mate delivered at ply 1 scores exactly POS_INF - 1; anything else
+        // means the mate-distance gradient is missing or inverted.
+        assert_eq!(result.score, POS_INF - 1);
+        let mv = result.best_move.expect("search must return a move");
+        assert_eq!(mv.origin(), Square::from_name("a1"));
+        assert_eq!(mv.destination(), Square::from_name("a8"));
     }
 }

@@ -276,12 +276,13 @@ where
     pub fn search(
         &mut self,
         board: &mut Board,
+        game_history: &[u64],
         constraint: SearchConstraint,
         control: SearchControl,
         reporter: &dyn SearchReporter,
     ) -> SearchResult {
         self.searcher
-            .start_search(board, constraint, &control, reporter)
+            .start_search(board, game_history, constraint, &control, reporter)
     }
 
     pub fn generate_moves(&mut self, board: &mut Board) -> MoveList {

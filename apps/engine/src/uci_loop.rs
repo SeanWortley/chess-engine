@@ -42,6 +42,7 @@ impl SearchReporter for UciReporter {
 enum WorkerCommand {
     Search {
         board: Board,
+        game_history: Vec<u64>,
         constraint: SearchConstraint,
         control: SearchControl,
     },
@@ -65,11 +66,13 @@ where
         match command {
             WorkerCommand::Search {
                 mut board,
+                game_history,
                 constraint,
                 control,
             } => {
                 let reporter = UciReporter;
-                let result = engine.search(&mut board, constraint, control, &reporter);
+                let result =
+                    engine.search(&mut board, &game_history, constraint, control, &reporter);
                 send_bestmove(result);
             }
             WorkerCommand::Perft { mut board, depth } => {
@@ -91,6 +94,9 @@ where
     OP: OrderingPolicy + Send + 'static,
 {
     let mut board = Board::starting_position();
+    // Hash of every position this game has visited, oldest first,
+    // always ending with the current position.
+    let mut game_hashes: Vec<u64> = vec![board.hash()];
     let mut control_handle: Option<SearchControl> = None;
 
     let (command_tx, command_rx): (Sender<WorkerCommand>, Receiver<WorkerCommand>) =
@@ -116,12 +122,15 @@ where
                     control.stop();
                 }
                 board = Board::starting_position();
+                game_hashes = vec![board.hash()];
             }
             UciCommand::Position { fen, moves } => {
                 board = match fen {
                     Some(fen) => Board::from_fen(&fen),
                     None => Board::starting_position(),
                 };
+                game_hashes.clear();
+                game_hashes.push(board.hash());
 
                 for uci_move in moves {
                     let origin = Square::from_name(uci_move.origin.as_str());
@@ -217,6 +226,7 @@ where
                     }
 
                     board.apply(mv);
+                    game_hashes.push(board.hash());
                 }
             }
             UciCommand::Go {
@@ -244,6 +254,7 @@ where
                 command_tx
                     .send(WorkerCommand::Search {
                         board: board.clone(),
+                        game_history: game_hashes.clone(),
                         constraint,
                         control,
                     })
