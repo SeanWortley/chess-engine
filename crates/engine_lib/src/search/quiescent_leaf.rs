@@ -1,6 +1,6 @@
 use crate::{
-    Board, Evaluator, MoveGenerator, MoveList, TransitionManager,
-    search::{LeafPolicy, OrderingPolicy},
+    Board, Evaluator, MoveGenerator, MoveList, SearchControl, TransitionManager,
+    search::{LeafPolicy, OrderingPolicy, metrics::SearchMetrics},
 };
 
 pub struct QuiescentLeaf<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy>
@@ -18,7 +18,16 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy>
         Self { tm, mg, e, op }
     }
 
-    pub fn quiesce(&mut self, board: &mut Board, alpha: i16, beta: i16) -> i16 {
+    pub fn quiesce(
+        &mut self,
+        board: &mut Board,
+        alpha: i16,
+        beta: i16,
+        control: &SearchControl,
+        metrics: &mut SearchMetrics,
+    ) -> i16 {
+        metrics.increment();
+
         let static_eval = self.e.evaluate(board);
         let mut alpha = alpha;
 
@@ -36,8 +45,13 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy>
         self.op.order_moves(board, &mut captures);
 
         for capture in captures.iter() {
+            if control.should_stop(metrics) {
+                break;
+            }
             self.tm.make(board, *capture);
-            let score = -self.quiesce(board, -beta, -alpha).saturating_neg();
+            let score = self
+                .quiesce(board, -beta, -alpha, control, metrics)
+                .saturating_neg();
             self.tm.unmake(board, *capture);
 
             if score >= beta {
@@ -58,7 +72,14 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy>
 impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy> LeafPolicy
     for QuiescentLeaf<TM, MG, E, OP>
 {
-    fn evaluate_leaf(&mut self, board: &mut Board, alpha: i16, beta: i16) -> i16 {
-        self.quiesce(board, alpha, beta)
+    fn evaluate_leaf(
+        &mut self,
+        board: &mut Board,
+        alpha: i16,
+        beta: i16,
+        control: &SearchControl,
+        metrics: &mut SearchMetrics,
+    ) -> i16 {
+        self.quiesce(board, alpha, beta, control, metrics)
     }
 }

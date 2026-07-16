@@ -9,6 +9,7 @@ use crate::{
         control::{SearchConstraint, SearchControl},
         mvv_lva::MvvLva,
         no_ordering::NoOrdering,
+        quiescent_leaf::QuiescentLeaf,
         static_leaf::StaticLeaf,
     },
 };
@@ -114,6 +115,53 @@ pub type V7Engine = Engine<
     PestoEvaluator,
     MvvLva,
 >;
+
+// V8: V7.1 composition with QuiescentLeaf replacing StaticLeaf.
+pub type V8Engine = Engine<
+    SearchDriver<
+        AlphaBetaSearcher<
+            CopyMakeTransition,
+            NaiveMoveGenerator<CopyMakeTransition>,
+            QuiescentLeaf<
+                CopyMakeTransition,
+                NaiveMoveGenerator<CopyMakeTransition>,
+                PestoEvaluator,
+                MvvLva,
+            >,
+            MvvLva,
+        >,
+    >,
+    NaiveMoveGenerator<CopyMakeTransition>,
+    PestoEvaluator,
+    MvvLva,
+>;
+
+impl V8Engine {
+    pub fn v8() -> Self {
+        let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
+        let evaluator = PestoEvaluator::new();
+        let ordering = MvvLva {};
+
+        let leaf = QuiescentLeaf::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            PestoEvaluator::new(),
+            MvvLva {},
+        );
+
+        let core = AlphaBetaSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            leaf,
+            ordering.clone(),
+            ray_is_attacked,
+        );
+
+        let searcher = SearchDriver::iterative_tt(core);
+
+        Engine::new(searcher, mg, evaluator, ordering)
+    }
+}
 
 impl V2Engine {
     pub fn v2() -> Self {
@@ -287,7 +335,7 @@ where
 
     pub fn generate_moves(&mut self, board: &mut Board) -> MoveList {
         let mut moves = MoveList::new();
-        self.move_generator.generate_moves(board, &mut moves);
+        self.move_generator.generate_moves(board, &mut moves, true);
         moves
     }
 

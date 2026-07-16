@@ -1,5 +1,5 @@
 use engine_lib::{
-    engine::{V4Engine, V5Engine, V6Engine, V7Engine},
+    engine::{V4Engine, V5Engine, V6Engine, V7Engine, V8Engine},
     prelude::*,
 };
 mod uci_loop;
@@ -10,7 +10,7 @@ fn main() {
         .iter()
         .find(|a| a.starts_with("--engine="))
         .map(|a| a.trim_start_matches("--engine="))
-        .unwrap_or("v7");
+        .unwrap_or("v8");
 
     match engine_kind {
         "v1" | "random" => {
@@ -33,6 +33,9 @@ fn main() {
         }
         "v7" | "tt" => {
             uci_loop::run(V7Engine::v7());
+        }
+        "v8" | "quiescent" => {
+            uci_loop::run(V8Engine::v8());
         }
         _ => {
             panic!("Preset not found");

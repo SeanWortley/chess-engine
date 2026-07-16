@@ -7,6 +7,6 @@ pub use attacks::IsAttackedFn;
 pub use naive::NaiveMoveGenerator;
 
 pub trait MoveGenerator {
-    fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList);
+    fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList, with_castling: bool);
     fn generate_captures_only(&mut self, board: &mut Board, moves: &mut MoveList);
 }

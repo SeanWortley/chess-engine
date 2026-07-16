@@ -72,7 +72,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
     }
 
     pub fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
-        self.mg.generate_moves(board, moves);
+        self.mg.generate_moves(board, moves, true);
     }
 
     pub fn terminal_score_if_no_moves(&self, board: &Board, root_distance: u8) -> i16 {
@@ -97,7 +97,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         }
 
         if depth == 0 {
-            return self.lp.evaluate_leaf(board, alpha, beta);
+            return self.lp.evaluate_leaf(board, alpha, beta, control, metrics);
         }
 
         if let Some(table) = &context.tt {
@@ -221,7 +221,7 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
     }
 
     pub fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
-        self.mg.generate_moves(board, moves);
+        self.mg.generate_moves(board, moves, true);
     }
 
     pub fn terminal_score_if_no_moves(&self, board: &Board, root_distance: u8) -> i16 {
@@ -244,7 +244,9 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         }
 
         if depth == 0 {
-            return self.lp.evaluate_leaf(board, NEG_INF, i16::MAX);
+            return self
+                .lp
+                .evaluate_leaf(board, NEG_INF, i16::MAX, control, metrics);
         }
 
         if let Some(table) = &context.tt {

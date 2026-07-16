@@ -70,7 +70,14 @@ pub trait SearchCore {
 }
 
 pub trait LeafPolicy {
-    fn evaluate_leaf(&mut self, board: &mut Board, alpha: i16, beta: i16) -> i16;
+    fn evaluate_leaf(
+        &mut self,
+        board: &mut Board,
+        alpha: i16,
+        beta: i16,
+        control: &SearchControl,
+        metrics: &mut SearchMetrics,
+    ) -> i16;
 }
 
 pub trait OrderingPolicy {
