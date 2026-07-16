@@ -32,6 +32,17 @@ impl<TM: TransitionManager> MoveGenerator for NaiveMoveGenerator<TM> {
             self.tm.unmake(board, *mv);
         }
     }
+
+    fn generate_captures_only(&mut self, board: &mut Board, moves: &mut MoveList) {
+        let mut all_moves = MoveList::new();
+        self.generate_moves(board, &mut all_moves);
+
+        for mv in all_moves.iter() {
+            if mv.is_capture() {
+                moves.push(*mv);
+            }
+        }
+    }
 }
 
 impl<TM: TransitionManager> NaiveMoveGenerator<TM> {

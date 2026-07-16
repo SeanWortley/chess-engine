@@ -11,6 +11,7 @@ pub mod metrics;
 pub mod mvv_lva;
 pub mod negamax;
 pub mod no_ordering;
+pub mod quiescent_leaf;
 pub mod static_leaf;
 pub mod tt;
 
