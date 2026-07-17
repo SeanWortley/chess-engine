@@ -83,3 +83,74 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy>
         self.quiesce(board, alpha, beta, control, metrics)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        CopyMakeTransition, NEG_INF, NaiveMoveGenerator, POS_INF,
+        eval::pesto::PestoEvaluator,
+        move_gen::attacks::ray_is_attacked,
+        search::{control::SearchConstraint, mvv_lva::MvvLva},
+    };
+
+    // Returns (static_eval, quiescence_eval) for the side to move.
+    fn evaluate(fen: &str) -> (i16, i16) {
+        let mut board = Board::from_fen(fen);
+        let static_eval = PestoEvaluator::new().evaluate(&board);
+
+        let mut leaf = QuiescentLeaf::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            PestoEvaluator::new(),
+            MvvLva {},
+        );
+        let control = SearchControl::new(SearchConstraint::fixed_depth(10));
+        let mut metrics = SearchMetrics::new();
+        let quiesce_eval =
+            leaf.evaluate_leaf(&mut board, NEG_INF, POS_INF, &control, &mut metrics);
+
+        (static_eval, quiesce_eval)
+    }
+
+    #[test]
+    fn test_sees_hanging_queen_beyond_static_eval() {
+        // Black to move; white queen on d5 is capturable by the e6 pawn.
+        // Static eval thinks black is down a queen; quiescence plays exd5
+        // and sees black is actually up a pawn.
+        let (static_eval, quiesce_eval) = evaluate("4k3/8/4p3/3Q4/8/8/8/4K3 b - - 0 1");
+
+        assert!(
+            static_eval < -400,
+            "static eval should see black down a queen, got {static_eval}"
+        );
+        assert!(
+            quiesce_eval > 0,
+            "quiescence should see black winning the queen, got {quiesce_eval}"
+        );
+    }
+
+    #[test]
+    fn test_stands_pat_instead_of_losing_capture() {
+        // White to move, up a queen. The only capture is Qxe5, which loses
+        // the queen to fxe5. Quiescence must decline it and return exactly
+        // the stand-pat (static) score.
+        let (static_eval, quiesce_eval) = evaluate("7k/8/5p2/4p3/3Q4/8/8/K7 w - - 0 1");
+
+        assert!(
+            static_eval > 400,
+            "static eval should see white up a queen, got {static_eval}"
+        );
+        assert_eq!(
+            quiesce_eval, static_eval,
+            "no capture improves the position; quiescence must stand pat"
+        );
+    }
+
+    #[test]
+    fn test_quiet_position_returns_static_eval() {
+        // No captures exist; quiescence must equal the static eval exactly.
+        let (static_eval, quiesce_eval) = evaluate("4k3/8/8/8/8/8/8/4K3 w - - 0 1");
+        assert_eq!(quiesce_eval, static_eval);
+    }
+}
