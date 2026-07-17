@@ -59,10 +59,6 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         let mut best_move: Option<Move> = None;
 
         for mv in moves.iter() {
-            if control.should_stop(metrics) {
-                break;
-            }
-
             self.kernel.make(board, *mv);
             context.history.push(board.hash());
             let score = self
@@ -89,6 +85,10 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 alpha = score;
             }
             if score >= beta {
+                break;
+            }
+
+            if control.should_stop(metrics) {
                 break;
             }
         }
