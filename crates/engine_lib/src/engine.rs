@@ -3,7 +3,7 @@ use crate::{
     PureNegamaxSearcher, RandomEvaluator, SearchResult, Searcher,
     eval::{material::MaterialEvaluator, pesto::PestoEvaluator},
     move_gen::attacks::ray_is_attacked,
-    move_ordering::{MvvLva, NoOrdering, OrderingPolicy},
+    move_ordering::{MvvLva, NoOrdering, OrderingContext, OrderingPolicy},
     search::{
         SearchDriver, SearchReporter,
         alpha_beta::AlphaBetaSearcher,
@@ -339,7 +339,8 @@ where
     }
 
     pub fn order_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
-        self.ordering_policy.order_moves(board, moves);
+        self.ordering_policy
+            .order_moves(board, moves, OrderingContext::empty());
     }
 
     pub fn evaluate(&self, board: &Board) -> i16 {

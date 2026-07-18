@@ -1,7 +1,7 @@
 use crate::{
     Board, Color, DRAW, IsAttackedFn, Move, MoveGenerator, MoveList, NEG_INF, PieceKind,
     SearchControl, Square, TransitionManager,
-    move_ordering::OrderingPolicy,
+    move_ordering::{OrderingContext, OrderingPolicy},
     search::{
         LeafPolicy,
         metrics::SearchMetrics,
@@ -118,7 +118,14 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
         let mut moves = MoveList::new();
         self.generate_moves(board, &mut moves);
-        self.op.order_moves(board, &mut moves);
+        // probe_move ignores entry depth, so this fires even when the score
+        // probe above couldn't be used.
+        let tt_move = context.tt.as_ref().and_then(|t| t.probe_move(board.hash()));
+        self.op.order_moves(
+            board,
+            &mut moves,
+            OrderingContext::new(tt_move, root_distance),
+        );
 
         let original_alpha = alpha;
         let mut alpha = alpha;
@@ -161,6 +168,9 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 alpha = score;
             }
             if alpha >= beta {
+                if !mv.is_capture() {
+                    self.op.on_beta_cutoff(*mv, root_distance, depth);
+                }
                 break;
             }
         }
@@ -258,7 +268,12 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
         let mut moves = MoveList::new();
         self.generate_moves(board, &mut moves);
-        self.op.order_moves(board, &mut moves);
+        let tt_move = context.tt.as_ref().and_then(|t| t.probe_move(board.hash()));
+        self.op.order_moves(
+            board,
+            &mut moves,
+            OrderingContext::new(tt_move, root_distance),
+        );
 
         let mut best_score = i16::MIN;
         let mut best_move: Option<Move> = None;

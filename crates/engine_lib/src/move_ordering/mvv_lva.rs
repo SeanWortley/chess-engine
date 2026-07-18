@@ -1,4 +1,7 @@
-use crate::{Board, Move, MoveKind, MoveList, move_ordering::OrderingPolicy};
+use crate::{
+    Board, Move, MoveKind, MoveList,
+    move_ordering::{OrderingContext, OrderingPolicy},
+};
 
 pub const MVV_LVA_TABLE: [[i16; 6]; 6] = [
     // Hundreds column = victim
@@ -16,7 +19,7 @@ pub const MVV_LVA_TABLE: [[i16; 6]; 6] = [
 pub struct MvvLva;
 
 impl OrderingPolicy for MvvLva {
-    fn order_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
+    fn order_moves(&mut self, board: &mut Board, moves: &mut MoveList, _context: OrderingContext) {
         moves.sort_by_key(|mv| self.score_move(board, *mv));
     }
 }
