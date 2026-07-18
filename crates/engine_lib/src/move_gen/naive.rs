@@ -17,11 +17,33 @@ pub struct NaiveMoveGenerator<TM: TransitionManager> {
 }
 
 impl<TM: TransitionManager> MoveGenerator for NaiveMoveGenerator<TM> {
-    fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
+    fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList, with_castling: bool) {
         let mut pseudo = MoveList::new();
-        self.generate_pseudo_legal(board, &mut pseudo, true);
+        self.generate_pseudo_legal(board, &mut pseudo, with_castling);
 
         for mv in pseudo.iter() {
+            self.tm.make(board, *mv);
+
+            let king_board = board.bitboard(board.to_move().opponent(), King);
+            let king_square = Square::from_index((king_board.lsb()).unwrap());
+            if !(self.is_attacked)(board, king_square, board.to_move()) {
+                moves.push(*mv);
+            }
+            self.tm.unmake(board, *mv);
+        }
+    }
+
+    fn generate_captures_only(&mut self, board: &mut Board, moves: &mut MoveList) {
+        let mut pseudo = MoveList::new();
+        let mut pseudo_captures = MoveList::new();
+        self.generate_pseudo_legal(board, &mut pseudo, false);
+
+        for mv in pseudo.iter() {
+            if mv.is_capture() {
+                pseudo_captures.push(*mv);
+            }
+        }
+        for mv in pseudo_captures.iter() {
             self.tm.make(board, *mv);
 
             let king_board = board.bitboard(board.to_move().opponent(), King);

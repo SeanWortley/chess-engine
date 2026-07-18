@@ -11,6 +11,7 @@ pub mod metrics;
 pub mod mvv_lva;
 pub mod negamax;
 pub mod no_ordering;
+pub mod quiescent_leaf;
 pub mod static_leaf;
 pub mod tt;
 
@@ -69,7 +70,14 @@ pub trait SearchCore {
 }
 
 pub trait LeafPolicy {
-    fn evaluate_leaf(&mut self, board: &mut Board, alpha: i16, beta: i16) -> i16;
+    fn evaluate_leaf(
+        &mut self,
+        board: &mut Board,
+        alpha: i16,
+        beta: i16,
+        control: &SearchControl,
+        metrics: &mut SearchMetrics,
+    ) -> i16;
 }
 
 pub trait OrderingPolicy {

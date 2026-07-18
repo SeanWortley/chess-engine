@@ -130,7 +130,7 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
         };
 
         for current_depth in 1..=requested_depth_limit {
-            if control.should_stop(&mut metrics) {
+            if current_depth > 1 && control.should_stop(&mut metrics) {
                 break;
             }
 
@@ -144,6 +144,17 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
 
             if !control.should_stop(&mut metrics) {
                 best_result = new_result;
+            } else if best_result.best_move.is_none() {
+                best_result = new_result;
+
+                reporter.report_depth(
+                    current_depth,
+                    metrics.total(),
+                    control.elapsed().as_millis(),
+                    best_result.score,
+                    best_result.best_move,
+                );
+                return best_result;
             }
 
             reporter.report_depth(
@@ -164,5 +175,57 @@ impl<S: SearchCore> Searcher for SearchDriver<S> {
 
     fn unmake(&mut self, board: &mut Board, mv: Move) {
         self.core_searcher.unmake(board, mv);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        CopyMakeTransition, NaiveMoveGenerator,
+        eval::pesto::PestoEvaluator,
+        move_gen::attacks::ray_is_attacked,
+        search::{
+            alpha_beta::AlphaBetaSearcher, control::SearchConstraint, mvv_lva::MvvLva,
+            static_leaf::StaticLeaf,
+        },
+    };
+
+    struct NullReporter;
+    impl SearchReporter for NullReporter {
+        fn report_depth(&self, _: u8, _: u64, _: u128, _: i16, _: Option<Move>) {}
+    }
+
+    // A search that times out before any depth completes must still return a
+    // legal move — a None best_move becomes "bestmove 0000" at the UCI layer,
+    // which cutechess scores as an illegal-move forfeit.
+    #[test]
+    fn test_returns_move_when_stopped_before_first_depth() {
+        let mut board = Board::starting_position();
+
+        let core = AlphaBetaSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            StaticLeaf::new(PestoEvaluator::new()),
+            MvvLva {},
+            ray_is_attacked,
+        );
+        let mut driver = SearchDriver::iterative_tt(core);
+
+        let control = SearchControl::new(SearchConstraint::fixed_depth(5));
+        control.stop(); // simulate the timeout having already expired
+
+        let result = driver.start_search(
+            &mut board,
+            &[],
+            SearchConstraint::fixed_depth(5),
+            &control,
+            &NullReporter,
+        );
+
+        assert!(
+            result.best_move.is_some(),
+            "stopped search returned no move; this becomes an illegal 'bestmove 0000' forfeit"
+        );
     }
 }
