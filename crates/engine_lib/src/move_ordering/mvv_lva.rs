@@ -1,4 +1,4 @@
-use crate::{Board, Move, MoveKind, MoveList, search::OrderingPolicy};
+use crate::{Board, Move, MoveKind, MoveList, move_ordering::OrderingPolicy};
 
 pub const MVV_LVA_TABLE: [[i16; 6]; 6] = [
     // Hundreds column = victim

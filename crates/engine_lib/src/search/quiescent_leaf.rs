@@ -1,6 +1,7 @@
 use crate::{
     Board, Evaluator, MoveGenerator, MoveList, SearchControl, TransitionManager,
-    search::{LeafPolicy, OrderingPolicy, metrics::SearchMetrics},
+    move_ordering::OrderingPolicy,
+    search::{LeafPolicy, metrics::SearchMetrics},
 };
 
 pub struct QuiescentLeaf<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy>

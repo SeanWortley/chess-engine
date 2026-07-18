@@ -53,7 +53,7 @@ enum WorkerCommand {
     Quit,
 }
 
-use engine_lib::search::OrderingPolicy;
+use engine_lib::move_ordering::OrderingPolicy;
 
 fn worker_loop<S, MG, E, OP>(mut engine: Engine<S, MG, E, OP>, command_rx: Receiver<WorkerCommand>)
 where

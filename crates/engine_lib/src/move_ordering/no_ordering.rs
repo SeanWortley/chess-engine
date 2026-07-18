@@ -1,4 +1,4 @@
-use crate::{Board, MoveList, search::OrderingPolicy};
+use crate::{Board, MoveList, move_ordering::OrderingPolicy};
 
 #[derive(Clone, Copy)]
 pub struct NoOrdering;

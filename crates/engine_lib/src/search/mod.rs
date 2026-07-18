@@ -1,7 +1,7 @@
 use crate::search::control::{SearchConstraint, SearchControl};
 use crate::search::metrics::SearchMetrics;
 use crate::search::tt::SearchContext;
-use crate::{Board, Move, MoveList};
+use crate::{Board, Move};
 
 pub mod alpha_beta;
 pub mod control;
@@ -76,8 +76,4 @@ pub trait LeafPolicy {
         control: &SearchControl,
         metrics: &mut SearchMetrics,
     ) -> i16;
-}
-
-pub trait OrderingPolicy {
-    fn order_moves(&mut self, board: &mut Board, moves: &mut MoveList);
 }

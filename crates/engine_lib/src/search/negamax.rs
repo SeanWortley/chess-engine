@@ -1,7 +1,8 @@
 use crate::{
     Board, Color, Move, MoveGenerator, MoveList, SearchResult, Square, TransitionManager,
+    move_ordering::OrderingPolicy,
     search::{
-        LeafPolicy, OrderingPolicy, SearchCore,
+        LeafPolicy, SearchCore,
         control::SearchControl,
         kernel::PureNegamaxKernel,
         metrics::SearchMetrics,

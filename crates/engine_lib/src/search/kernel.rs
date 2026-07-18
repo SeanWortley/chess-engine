@@ -1,8 +1,9 @@
 use crate::{
     Board, Color, DRAW, IsAttackedFn, Move, MoveGenerator, MoveList, NEG_INF, PieceKind,
     SearchControl, Square, TransitionManager,
+    move_ordering::OrderingPolicy,
     search::{
-        LeafPolicy, OrderingPolicy,
+        LeafPolicy,
         metrics::SearchMetrics,
         tt::{SearchContext, TTEntry, TTFlag, from_tt_score, to_tt_score},
     },
