@@ -32,7 +32,7 @@ impl MoveList {
 
     pub fn sort_by_key<F>(&mut self, f: F)
     where
-        F: Fn(&Move) -> i16,
+        F: Fn(&Move) -> i32,
     {
         self.moves[..self.len].sort_by_key(|mv| std::cmp::Reverse(f(mv)));
     }

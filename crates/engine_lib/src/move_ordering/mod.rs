@@ -1,5 +1,8 @@
 pub mod mvv_lva;
 pub mod no_ordering;
+pub mod scored_ordering;
+pub mod scorer;
+pub mod tt_move;
 
 pub use mvv_lva::MvvLva;
 pub use no_ordering::NoOrdering;
@@ -12,6 +15,7 @@ pub trait OrderingPolicy {
     fn on_beta_cutoff(&mut self, _mv: Move, _root_distance: u8, _depth: u8) {}
 }
 
+#[derive(Clone, Copy)]
 pub struct OrderingContext {
     pub tt_move: Option<Move>,
     pub root_distance: u8,
