@@ -3,12 +3,11 @@ use crate::{
     PureNegamaxSearcher, RandomEvaluator, SearchResult, Searcher,
     eval::{material::MaterialEvaluator, pesto::PestoEvaluator},
     move_gen::attacks::ray_is_attacked,
+    move_ordering::{MvvLva, NoOrdering},
     search::{
         OrderingPolicy, SearchDriver, SearchReporter,
         alpha_beta::AlphaBetaSearcher,
         control::{SearchConstraint, SearchControl},
-        mvv_lva::MvvLva,
-        no_ordering::NoOrdering,
         quiescent_leaf::QuiescentLeaf,
         static_leaf::StaticLeaf,
     },

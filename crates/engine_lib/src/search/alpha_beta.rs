@@ -146,10 +146,8 @@ mod tests {
         CopyMakeTransition, NaiveMoveGenerator, POS_INF,
         eval::pesto::PestoEvaluator,
         move_gen::attacks::ray_is_attacked,
-        search::{
-            control::SearchConstraint, metrics::SearchMetrics, mvv_lva::MvvLva,
-            static_leaf::StaticLeaf,
-        },
+        move_ordering::MvvLva,
+        search::{control::SearchConstraint, metrics::SearchMetrics, static_leaf::StaticLeaf},
     };
 
     #[test]

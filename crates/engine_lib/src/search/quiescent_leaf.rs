@@ -91,7 +91,8 @@ mod tests {
         CopyMakeTransition, NEG_INF, NaiveMoveGenerator, POS_INF,
         eval::pesto::PestoEvaluator,
         move_gen::attacks::ray_is_attacked,
-        search::{control::SearchConstraint, mvv_lva::MvvLva},
+        move_ordering::MvvLva,
+        search::control::SearchConstraint,
     };
 
     // Returns (static_eval, quiescence_eval) for the side to move.

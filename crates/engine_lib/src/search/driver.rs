@@ -186,10 +186,10 @@ mod tests {
         eval::pesto::PestoEvaluator,
         move_gen::attacks::ray_is_attacked,
         search::{
-            alpha_beta::AlphaBetaSearcher, control::SearchConstraint, mvv_lva::MvvLva,
-            static_leaf::StaticLeaf,
+            alpha_beta::AlphaBetaSearcher, control::SearchConstraint, static_leaf::StaticLeaf,
         },
     };
+    use crate::move_ordering::MvvLva;
 
     struct NullReporter;
     impl SearchReporter for NullReporter {

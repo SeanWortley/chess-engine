@@ -2,6 +2,7 @@ pub mod core;
 pub mod engine;
 pub mod eval;
 pub mod move_gen;
+pub mod move_ordering;
 pub mod search;
 pub mod transition;
 
