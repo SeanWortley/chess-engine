@@ -3,6 +3,7 @@ use crate::{
     move_ordering::{OrderingContext, scorer::MoveScorer},
 };
 
+#[derive(Clone, Copy)]
 pub struct TtMoveScorer;
 
 impl MoveScorer for TtMoveScorer {
@@ -14,4 +15,3 @@ impl MoveScorer for TtMoveScorer {
     }
     fn on_beta_cutoff(&mut self, _mv: Move, _root_distance: u8, _depth: u8) {}
 }
-

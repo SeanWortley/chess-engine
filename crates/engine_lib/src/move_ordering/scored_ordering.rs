@@ -18,6 +18,12 @@ impl<MS: MoveScorer> OrderingPolicy for ScoredOrdering<MS> {
     }
 }
 
+impl<MS: MoveScorer> ScoredOrdering<MS> {
+    pub fn new(ms: MS) -> Self {
+        ScoredOrdering { ms }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,8 +115,14 @@ mod tests {
         ordering.on_beta_cutoff(mv, 3, 5);
         ordering.on_beta_cutoff(mv, 4, 5);
 
-        assert_eq!(ordering.ms.0.cutoffs, 2, "first scorer missed cutoff notifications");
-        assert_eq!(ordering.ms.1.cutoffs, 2, "second scorer missed cutoff notifications");
+        assert_eq!(
+            ordering.ms.0.cutoffs, 2,
+            "first scorer missed cutoff notifications"
+        );
+        assert_eq!(
+            ordering.ms.1.cutoffs, 2,
+            "second scorer missed cutoff notifications"
+        );
     }
 
     // Keep BAND referenced so the import stays honest if tests are trimmed.

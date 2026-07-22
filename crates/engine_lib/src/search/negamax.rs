@@ -1,6 +1,6 @@
 use crate::{
     Board, Color, Move, MoveGenerator, MoveList, SearchResult, Square, TransitionManager,
-    move_ordering::OrderingPolicy,
+    move_ordering::{OrderingContext, OrderingPolicy},
     search::{
         LeafPolicy, SearchCore,
         control::SearchControl,
@@ -50,6 +50,10 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 score: self.kernel.terminal_score_if_no_moves(board, 0),
             };
         }
+
+        let tt_move = context.tt.as_ref().and_then(|t| t.probe_move(board.hash()));
+        self.kernel
+            .order_moves(board, &mut moves, OrderingContext::new(tt_move, 0));
 
         let mut best_score = i16::MIN;
         let mut best_move: Option<Move> = None;

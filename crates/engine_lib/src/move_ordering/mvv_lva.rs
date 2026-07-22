@@ -18,6 +18,7 @@ pub const MVV_LVA_TABLE: [[i32; 6]; 6] = [
 #[derive(Clone, Copy)]
 pub struct MvvLva;
 
+#[derive(Clone, Copy)]
 pub struct MvvLvaScorer;
 
 impl OrderingPolicy for MvvLva {

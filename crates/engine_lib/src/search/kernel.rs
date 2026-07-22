@@ -76,6 +76,15 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         self.mg.generate_moves(board, moves, true);
     }
 
+    pub fn order_moves(
+        &mut self,
+        board: &mut Board,
+        moves: &mut MoveList,
+        context: OrderingContext,
+    ) {
+        self.op.order_moves(board, moves, context);
+    }
+
     pub fn terminal_score_if_no_moves(&self, board: &Board, root_distance: u8) -> i16 {
         terminal_score_if_no_moves(board, root_distance, self.attacked_fn)
     }
@@ -233,6 +242,15 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
     pub fn generate_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
         self.mg.generate_moves(board, moves, true);
+    }
+
+    pub fn order_moves(
+        &mut self,
+        board: &mut Board,
+        moves: &mut MoveList,
+        context: OrderingContext,
+    ) {
+        self.op.order_moves(board, moves, context);
     }
 
     pub fn terminal_score_if_no_moves(&self, board: &Board, root_distance: u8) -> i16 {

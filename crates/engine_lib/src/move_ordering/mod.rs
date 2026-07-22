@@ -4,8 +4,11 @@ pub mod scored_ordering;
 pub mod scorer;
 pub mod tt_move;
 
-pub use mvv_lva::MvvLva;
+pub use mvv_lva::{MvvLva, MvvLvaScorer};
 pub use no_ordering::NoOrdering;
+pub use scored_ordering::ScoredOrdering;
+pub use scorer::MoveScorer;
+pub use tt_move::TtMoveScorer;
 
 use crate::{Board, Move, MoveList};
 
