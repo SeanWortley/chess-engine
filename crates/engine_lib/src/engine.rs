@@ -3,12 +3,14 @@ use crate::{
     PureNegamaxSearcher, RandomEvaluator, SearchResult, Searcher,
     eval::{material::MaterialEvaluator, pesto::PestoEvaluator},
     move_gen::attacks::ray_is_attacked,
+    move_ordering::{
+        MvvLva, MvvLvaScorer, NoOrdering, OrderingContext, OrderingPolicy, ScoredOrdering,
+        TtMoveScorer,
+    },
     search::{
-        OrderingPolicy, SearchDriver, SearchReporter,
+        SearchDriver, SearchReporter,
         alpha_beta::AlphaBetaSearcher,
         control::{SearchConstraint, SearchControl},
-        mvv_lva::MvvLva,
-        no_ordering::NoOrdering,
         quiescent_leaf::QuiescentLeaf,
         static_leaf::StaticLeaf,
     },
@@ -135,6 +137,52 @@ pub type V8Engine = Engine<
     PestoEvaluator,
     MvvLva,
 >;
+
+pub type V9Engine = Engine<
+    SearchDriver<
+        AlphaBetaSearcher<
+            CopyMakeTransition,
+            NaiveMoveGenerator<CopyMakeTransition>,
+            QuiescentLeaf<
+                CopyMakeTransition,
+                NaiveMoveGenerator<CopyMakeTransition>,
+                PestoEvaluator,
+                MvvLva,
+            >,
+            ScoredOrdering<(TtMoveScorer, MvvLvaScorer)>,
+        >,
+    >,
+    NaiveMoveGenerator<CopyMakeTransition>,
+    PestoEvaluator,
+    ScoredOrdering<(TtMoveScorer, MvvLvaScorer)>,
+>;
+
+impl V9Engine {
+    pub fn v9() -> Self {
+        let mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
+        let evaluator = PestoEvaluator::new();
+        let ordering = ScoredOrdering::new((TtMoveScorer, MvvLvaScorer));
+
+        let leaf = QuiescentLeaf::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            PestoEvaluator::new(),
+            MvvLva {},
+        );
+
+        let core = AlphaBetaSearcher::new(
+            CopyMakeTransition::new(),
+            NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked),
+            leaf,
+            ordering.clone(),
+            ray_is_attacked,
+        );
+
+        let searcher = SearchDriver::iterative_tt(core);
+
+        Engine::new(searcher, mg, evaluator, ordering)
+    }
+}
 
 impl V8Engine {
     pub fn v8() -> Self {
@@ -340,7 +388,8 @@ where
     }
 
     pub fn order_moves(&mut self, board: &mut Board, moves: &mut MoveList) {
-        self.ordering_policy.order_moves(board, moves);
+        self.ordering_policy
+            .order_moves(board, moves, OrderingContext::empty());
     }
 
     pub fn evaluate(&self, board: &Board) -> i16 {

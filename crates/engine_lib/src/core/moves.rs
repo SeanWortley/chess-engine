@@ -6,7 +6,7 @@ use super::{PieceKind, Square};
 /// [0..5]   from/origin square (6 bits)
 /// [6..11]  to/destination square (6 bits)
 /// [12..15] flags (4 bits)
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Move(u16);
 
 /// Ripped straight from the wiki babyyyyyy

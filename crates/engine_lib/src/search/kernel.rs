@@ -1,8 +1,9 @@
 use crate::{
     Board, Color, DRAW, IsAttackedFn, Move, MoveGenerator, MoveList, NEG_INF, PieceKind,
     SearchControl, Square, TransitionManager,
+    move_ordering::{OrderingContext, OrderingPolicy},
     search::{
-        LeafPolicy, OrderingPolicy,
+        LeafPolicy,
         metrics::SearchMetrics,
         tt::{SearchContext, TTEntry, TTFlag, from_tt_score, to_tt_score},
     },
@@ -75,6 +76,15 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         self.mg.generate_moves(board, moves, true);
     }
 
+    pub fn order_moves(
+        &mut self,
+        board: &mut Board,
+        moves: &mut MoveList,
+        context: OrderingContext,
+    ) {
+        self.op.order_moves(board, moves, context);
+    }
+
     pub fn terminal_score_if_no_moves(&self, board: &Board, root_distance: u8) -> i16 {
         terminal_score_if_no_moves(board, root_distance, self.attacked_fn)
     }
@@ -117,7 +127,14 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
         let mut moves = MoveList::new();
         self.generate_moves(board, &mut moves);
-        self.op.order_moves(board, &mut moves);
+        // probe_move ignores entry depth, so this fires even when the score
+        // probe above couldn't be used.
+        let tt_move = context.tt.as_ref().and_then(|t| t.probe_move(board.hash()));
+        self.op.order_moves(
+            board,
+            &mut moves,
+            OrderingContext::new(tt_move, root_distance),
+        );
 
         let original_alpha = alpha;
         let mut alpha = alpha;
@@ -160,6 +177,9 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
                 alpha = score;
             }
             if alpha >= beta {
+                if !mv.is_capture() {
+                    self.op.on_beta_cutoff(*mv, root_distance, depth);
+                }
                 break;
             }
         }
@@ -224,6 +244,15 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
         self.mg.generate_moves(board, moves, true);
     }
 
+    pub fn order_moves(
+        &mut self,
+        board: &mut Board,
+        moves: &mut MoveList,
+        context: OrderingContext,
+    ) {
+        self.op.order_moves(board, moves, context);
+    }
+
     pub fn terminal_score_if_no_moves(&self, board: &Board, root_distance: u8) -> i16 {
         terminal_score_if_no_moves(board, root_distance, self.attacked_fn)
     }
@@ -257,7 +286,12 @@ impl<TM: TransitionManager, MG: MoveGenerator, LP: LeafPolicy, OP: OrderingPolic
 
         let mut moves = MoveList::new();
         self.generate_moves(board, &mut moves);
-        self.op.order_moves(board, &mut moves);
+        let tt_move = context.tt.as_ref().and_then(|t| t.probe_move(board.hash()));
+        self.op.order_moves(
+            board,
+            &mut moves,
+            OrderingContext::new(tt_move, root_distance),
+        );
 
         let mut best_score = i16::MIN;
         let mut best_move: Option<Move> = None;

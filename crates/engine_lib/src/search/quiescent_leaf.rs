@@ -1,6 +1,7 @@
 use crate::{
     Board, Evaluator, MoveGenerator, MoveList, SearchControl, TransitionManager,
-    search::{LeafPolicy, OrderingPolicy, metrics::SearchMetrics},
+    move_ordering::{OrderingContext, OrderingPolicy},
+    search::{LeafPolicy, metrics::SearchMetrics},
 };
 
 pub struct QuiescentLeaf<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy>
@@ -42,7 +43,8 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy>
 
         let mut captures = MoveList::new();
         self.mg.generate_captures_only(board, &mut captures);
-        self.op.order_moves(board, &mut captures);
+        self.op
+            .order_moves(board, &mut captures, OrderingContext::empty());
 
         for capture in captures.iter() {
             if control.should_stop(metrics) {
@@ -88,10 +90,9 @@ impl<TM: TransitionManager, MG: MoveGenerator, E: Evaluator, OP: OrderingPolicy>
 mod tests {
     use super::*;
     use crate::{
-        CopyMakeTransition, NEG_INF, NaiveMoveGenerator, POS_INF,
-        eval::pesto::PestoEvaluator,
-        move_gen::attacks::ray_is_attacked,
-        search::{control::SearchConstraint, mvv_lva::MvvLva},
+        CopyMakeTransition, NEG_INF, NaiveMoveGenerator, POS_INF, eval::pesto::PestoEvaluator,
+        move_gen::attacks::ray_is_attacked, move_ordering::MvvLva,
+        search::control::SearchConstraint,
     };
 
     // Returns (static_eval, quiescence_eval) for the side to move.
@@ -107,8 +108,7 @@ mod tests {
         );
         let control = SearchControl::new(SearchConstraint::fixed_depth(10));
         let mut metrics = SearchMetrics::new();
-        let quiesce_eval =
-            leaf.evaluate_leaf(&mut board, NEG_INF, POS_INF, &control, &mut metrics);
+        let quiesce_eval = leaf.evaluate_leaf(&mut board, NEG_INF, POS_INF, &control, &mut metrics);
 
         (static_eval, quiesce_eval)
     }
