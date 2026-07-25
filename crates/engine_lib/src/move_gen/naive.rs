@@ -390,3 +390,89 @@ impl<TM: TransitionManager> NaiveMoveGenerator<TM> {
         Some(destination)
     }
 }
+
+#[cfg(test)]
+mod perft_tests {
+    use super::*;
+    use crate::move_gen::attacks::ray_is_attacked;
+    use crate::transition::CopyMakeTransition;
+
+    // Walks the legal move tree and counts leaf nodes at the given depth.
+    // This is the canonical correctness test for move generation AND for any
+    // TransitionManager: a single wrong count means make/unmake or generation
+    // diverged from ground truth. `tm` is the walker's own transition manager;
+    // the generator keeps a separate one internally for legality checks.
+    fn perft<TM: TransitionManager>(
+        mg: &mut NaiveMoveGenerator<TM>,
+        tm: &mut TM,
+        board: &mut Board,
+        depth: u8,
+    ) -> u64 {
+        if depth == 0 {
+            return 1;
+        }
+
+        let mut moves = MoveList::new();
+        mg.generate_moves(board, &mut moves, true);
+
+        let mut total = 0;
+        for mv in moves.iter() {
+            tm.make(board, *mv);
+            total += perft(mg, tm, board, depth - 1);
+            tm.unmake(board, *mv);
+        }
+        total
+    }
+
+    fn perft_from(fen: &str, depth: u8) -> u64 {
+        let mut board = Board::from_fen(fen);
+        let mut mg = NaiveMoveGenerator::new(CopyMakeTransition::new(), ray_is_attacked);
+        let mut tm = CopyMakeTransition::new();
+        perft(&mut mg, &mut tm, &mut board, depth)
+    }
+
+    const STARTPOS: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    // "Kiwipete" - dense middlegame: castling, en passant, pins, promotions.
+    const KIWIPETE: &str =
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+    // CPW "Position 3" - engineered to expose en passant / promotion bugs.
+    const POSITION_3: &str = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1";
+
+    #[test]
+    fn perft_startpos() {
+        assert_eq!(perft_from(STARTPOS, 1), 20);
+        assert_eq!(perft_from(STARTPOS, 2), 400);
+        assert_eq!(perft_from(STARTPOS, 3), 8_902);
+        assert_eq!(perft_from(STARTPOS, 4), 197_281);
+    }
+
+    #[test]
+    fn perft_kiwipete() {
+        assert_eq!(perft_from(KIWIPETE, 1), 48);
+        assert_eq!(perft_from(KIWIPETE, 2), 2_039);
+        assert_eq!(perft_from(KIWIPETE, 3), 97_862);
+    }
+
+    #[test]
+    fn perft_position_3() {
+        assert_eq!(perft_from(POSITION_3, 1), 14);
+        assert_eq!(perft_from(POSITION_3, 2), 191);
+        assert_eq!(perft_from(POSITION_3, 3), 2_812);
+        assert_eq!(perft_from(POSITION_3, 4), 43_238);
+    }
+
+    // Deep runs: correct but slow. Run explicitly with `cargo test -- --ignored`.
+    #[test]
+    #[ignore]
+    fn perft_startpos_deep() {
+        assert_eq!(perft_from(STARTPOS, 5), 4_865_609);
+        assert_eq!(perft_from(STARTPOS, 6), 119_060_324);
+    }
+
+    #[test]
+    #[ignore]
+    fn perft_kiwipete_deep() {
+        assert_eq!(perft_from(KIWIPETE, 4), 4_085_603);
+        assert_eq!(perft_from(KIWIPETE, 5), 193_690_690);
+    }
+}
