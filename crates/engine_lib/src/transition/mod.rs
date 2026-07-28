@@ -1,6 +1,7 @@
 use crate::{Board, Move};
 
 pub mod copy_make;
+pub mod make_unmake;
 
 pub use copy_make::CopyMakeTransition;
 

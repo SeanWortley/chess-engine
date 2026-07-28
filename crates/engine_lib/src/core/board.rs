@@ -1,5 +1,5 @@
 use super::{Bitboard, Move, MoveKind, Square};
-use crate::core::zobrist::ZOBRIST;
+use crate::{core::zobrist::ZOBRIST, transition::make_unmake::UndoInfo};
 use std::fmt;
 
 // Clone is for naive copy-make move gen
@@ -154,7 +154,7 @@ impl Board {
     }
 
     // To Do: Add error passing on invalid move, should make perft debugging easier :)
-    pub fn apply(&mut self, mv: Move) {
+    pub fn apply(&mut self, mv: Move) -> UndoInfo {
         // Toggle side to move
         self.xor(ZOBRIST.side_to_move);
 
